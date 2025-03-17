@@ -32,7 +32,7 @@ module alu_manual_tester#(
         // 0x1A: "A" or LDR
         // 0x20: Bit shift left
         // 0x21: Bit shift right
-        // 0x23: SRA??
+        // 0x23: Bit shift right with sign extension
         
         // Outputs, with flags zero, overflow and negative 
         io_led = {c{5h00, alu.z, alu.v, alu.n}, alu.out[SIZE-1:SIZE-8], alu.out[7:0]}

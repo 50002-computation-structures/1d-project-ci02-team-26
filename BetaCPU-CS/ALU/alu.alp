@@ -88,6 +88,12 @@
                     "type": "DiskFile",
                     "path": "source/compare_tb.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/boolean_tb.luc"
+                }
             }
         ],
         "constraintFiles": [
