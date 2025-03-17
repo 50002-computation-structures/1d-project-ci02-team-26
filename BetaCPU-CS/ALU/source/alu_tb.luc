@@ -70,15 +70,160 @@ testbench alu_tb {
         $assert(dut.v == 0)
         $assert(dut.n == 1)
         
-        // Subtract 2 positive, no negative
+        // Subtract by largest possible positive integer 0x7fffffff
         dut.alufn = 6h01
-        dut.a = 32h0facade0
-        dut.b = 32h00000de0
+        dut.a = 32h0
+        dut.b = 32h7fffffff
         $tick()
-        $assert(dut.out == 32h0faca000)
+        $assert(dut.out == 32h80000001)
         $assert(dut.z == 0)
         $assert(dut.v == 0)
-        $assert(dut.n == 0)
+        $assert(dut.n == 1)
+    }
+    
+    fun mult_tests() {
+        // Multiply by zero tests
+        dut.alufn = 6h02
+        dut.a = 32hdeadbeef
+        dut.b = 32h0
+        $tick()
+        $assert(dut.out == 32h0)
+        
+        dut.alufn = 6h02
+        dut.a = 32h0
+        dut.b = 32hdeadbeef
+        $tick()
+        $assert(dut.out == 32h0)
+        
+        // Multiply 2 positive numbers with overflow to signed bit
+        dut.alufn = 6h02
+        dut.a = 32h0000beef
+        dut.b = 32h0000beef
+        $tick()
+        $assert(dut.out == 32h8e67a321)
+    }
+    
+    fun bool_tests() {
+        // 1 AND 0, 1 AND 1
+        dut.alufn = 6h18
+        dut.a = 32hffffffff
+        dut.b = 32h0000ffff
+        $tick()
+        $assert(dut.out == 32h0000ffff)
+        
+        // 1 OR 0, 1 OR 1
+        dut.alufn = 6h1e
+        dut.a = 32hfffffff0
+        dut.b = 32h0000fff0
+        $tick()
+        $assert(dut.out == 32hfffffff0)
+        
+        // 1 XOR 0, 1 XOR 1
+        dut.alufn = 6h16
+        dut.a = 32hfffffff0
+        dut.b = 32h0000fff0
+        $tick()
+        $assert(dut.out == 32hffff0000)
+        
+        // "A" passthrough
+        dut.alufn = 6h1a
+        dut.a = 32hfffffff0
+        dut.b = 32h0000fff0
+        $tick()
+        $assert(dut.out == 32hfffffff0)
+    }
+    
+    fun shifter_tests() {
+        // Left Shift (safe)
+        dut.alufn = 6h20
+        dut.a = 32h0000ff00
+        dut.b = 32d0
+        $tick()
+        $assert(dut.out == 32h0000ff00)
+        
+        dut.alufn = 6h20
+        dut.a = 32h0000ff00
+        dut.b = 32d4
+        $tick()
+        $assert(dut.out == 32h000ff000)
+        
+        // Left shift with MSB occupied
+        dut.alufn = 6h20
+        dut.a = 32hf000ff00
+        dut.b = 32d4
+        $tick()
+        $assert(dut.out == 32h000ff000)
+        
+        // Max shift left
+        dut.alufn = 6h20
+        dut.a = 32hfffffff1
+        dut.b = 32d31
+        $tick()
+        $assert(dut.out == 32h80000000)
+        
+        // Right Shift (safe)
+        dut.alufn = 6h21
+        dut.a = 32h0000ff00
+        dut.b = 32d0
+        $tick()
+        $assert(dut.out == 32h0000ff00)
+        
+        dut.alufn = 6h21
+        dut.a = 32h0000ff00
+        dut.b = 32d4
+        $tick()
+        $assert(dut.out == 32h00000ff0)
+        
+        // Max shift right
+        dut.alufn = 6h21
+        dut.a = 32h80000000
+        dut.b = 32d31
+        $tick()
+        $assert(dut.out == 32h00000001)
+        
+        // Arithmetic Shift Right
+        dut.alufn = 6h23
+        dut.a = 32hf000ff00
+        dut.b = 32d4
+        $tick()
+        $assert(dut.out == 32hff000ff0)
+    }
+    
+    fun cmp_tests() {
+        // CMP equality
+        dut.alufn = 6h33
+        dut.a = 32hc0ffee
+        dut.b = 32hc0ffee
+        $tick()
+        $assert(dut.out == 32h00000001)
+        
+        // CMP inequality
+        dut.alufn = 6h33
+        dut.a = 32hc0ffee
+        dut.b = 32hbeef
+        $tick()
+        $assert(dut.out == 32h00000000)
+        
+        // CMP A < B (A smaller than B)
+        dut.alufn = 6h35
+        dut.a = 32hbeef
+        dut.b = 32hc0ffee
+        $tick()
+        $assert(dut.out == 32h00000001)
+        
+        // CMP A < B (A equal B)
+        dut.alufn = 6h35
+        dut.a = 32hc0ffee
+        dut.b = 32hc0ffee
+        $tick()
+        $assert(dut.out == 32h00000000)
+        
+        // CMP A < B (A larger than B)
+        dut.alufn = 6h35
+        dut.a = 32hc0ffef
+        dut.b = 32hc0ffee
+        $tick()
+        $assert(dut.out == 32h00000000)
     }
 
     test myTest {
@@ -92,9 +237,10 @@ testbench alu_tb {
 
         // Testing
         $adder_tests()
-        
-        
-        
+        $mult_tests()
+        $bool_tests()
+        $shifter_tests()
+        $cmp_tests()
         
     }
 }
