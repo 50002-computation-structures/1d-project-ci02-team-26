@@ -112,6 +112,24 @@
                     "type": "DiskFile",
                     "path": "source/x_bit_shifters_tb.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/shifter_tb.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/multiplier_tb.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/alu_tb.luc"
+                }
             }
         ],
         "constraintFiles": [
