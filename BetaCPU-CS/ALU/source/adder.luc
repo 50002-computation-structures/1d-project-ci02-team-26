@@ -3,7 +3,7 @@
 // Adder performance is VALIDATED :D
 
 module adder #(
-    SIZE ~ 32 : SIZE > 1
+    SIZE = 32 : SIZE > 1
 )(
     input a[SIZE],
     input b[SIZE],

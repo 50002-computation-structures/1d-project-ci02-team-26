@@ -29,7 +29,7 @@ module alu_manual_tester#(
         // 0x18: AND
         // 0x1E: OR
         // 0x16: XOR
-        // 0x1A: "A" or LDR
+        // 0x1A: "A" pass through
         // 0x20: Bit shift left
         // 0x21: Bit shift right
         // 0x23: Bit shift right with sign extension
