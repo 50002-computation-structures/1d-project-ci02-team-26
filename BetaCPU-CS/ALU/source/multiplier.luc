@@ -1,0 +1,60 @@
+module multiplier (
+    input a[32],
+    input b[32],
+    output mul[32]
+) {
+    // A sample 4 bit multiplier is implemented here:
+    // https://natalieagus.github.io/50002/assets/contentimage/lab3-fpga/2024-50002-MUL.drawio.png
+    
+    fa fa[496]
+    sig current_row_fa_index[$clog2(496)]
+    sig previous_row_fa_index[$clog2(496)]
+    
+    always {
+        // Initial connections
+        fa.a = 0
+        fa.b = 0
+        fa.cin = 0
+        
+        // implement multiplier unit logic here
+        
+        
+        mul = 0 // REMOVE THIS, TESTING ONLY
+        mul[0] = b[0] & a[0]
+        
+        
+        repeat (i, 31){
+            fa.b[i] = a[i+1] & b[0]
+            if (i == 0) {
+                fa.cin[i] = 0
+            }
+        }
+        
+        previous_row_fa_index = 0
+        current_row_fa_index = 31
+        
+        // bit 1 out
+        mul[1] = fa.s[previous_row_fa_index]
+        
+        repeat (i, 29, 2){ // i==2 to 30 inclusive
+            repeat (j, 32-i){ // do this for every of the (32-i) full adders in the ith row
+                fa.a[current_row_fa_index + j] = a[j] & b[i]
+                fa.b[current_row_fa_index + j] = fa.s[previous_row_fa_index + 1 + j]
+                if (j==0) { // set the cin input of the leading adder of the ith row to 0
+                    fa.cin[current_row_fa_index + j] = 0
+                }
+                else {
+                    fa.cin[current_row_fa_index + j] = fa.cout[current_row_fa_index + j - 1]
+                }
+            }
+            
+            previous_row_fa_index = current_row_fa_index
+        }
+        
+        // 31st row / last row logic, and MSB output
+        fa.a[495] = a[0] & b[31]
+        fa.b[495] = fa.s[494]
+        
+        //fa.cin[]
+    }
+}

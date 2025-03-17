@@ -1,0 +1,35 @@
+// A ripple-carry-adder combinational logic unit
+module rca #(
+    SIZE ~ 32 : SIZE > 1
+)(
+    input a[SIZE],
+    input b[SIZE],
+    input cin,
+    output cout,
+    output s[SIZE]
+) {
+    // Initialise our full adder units
+    fa fa[32];
+    
+    always {
+        // Add inputs
+        fa.a = a
+        fa.b = b
+        
+        // Chain carry out to carry in ports internally
+        // This block chains the full adder's cin to cout ports without having to write everything by hand
+        repeat(i, SIZE) {
+            if (i == 0) {
+                fa.cin[0] = cin
+            }
+            else {
+                fa.cin[i] = fa.cout[i-1]
+            }
+        }
+        
+        // Final cout port connects to the last carry out
+        cout = fa.cout[SIZE-1]
+        // Final sum from the ripple adder
+        s = fa.s
+    }
+}

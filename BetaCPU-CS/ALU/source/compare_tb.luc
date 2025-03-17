@@ -1,0 +1,45 @@
+// This is an extremely simple testbench for the comparator module
+// What should actually be done is that the ALU should be tested as one whole unit
+// With the comparator being
+
+testbench compare_tb {
+    sig clk
+    
+    compare dut()
+
+    fun tick_clock() {
+        clk = 1
+        $silent_tick() // tick without capturing signals
+        clk = 0
+        $tick()
+    }
+
+    test myTest {
+        // Initialisation
+        clk = 0
+        dut.z = 0
+        dut.v = 0
+        dut.n = 0
+        dut.alufn = 0
+        $tick() // capture initial state
+
+        // Test start
+        
+        // Case 1: ALUFN = xxx01x, expected output should mirror dut.z
+        dut.alufn = 6bxxx01x
+        dut.z = 0
+        $tick()
+        $assert(dut.cmp == 1b0)
+        
+        dut.alufn = 6bxxx01x
+        dut.z = 1
+        $tick()
+        $assert(dut.cmp == 1b1)
+        
+        // Case 2: ALUFN = xxx00x, expected output=x, please inspect visually
+        dut.alufn = 6bxxx00x
+        dut.z = 0
+        $tick()
+        // Cannot do assert here for some reason for x signals
+    }
+}

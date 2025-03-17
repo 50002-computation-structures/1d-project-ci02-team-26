@@ -1,0 +1,39 @@
+module alu (
+    input a[32],
+    input b[32],
+    input alufn[6], // See https://natalieagus.github.io/50002/assets/contentimage/lab3/21.png for the full list
+    output out[32],
+    output z,
+    output v,
+    output n
+) {
+    
+    adder adder(#SIZE(32))
+    compare compare()
+    
+    always {
+        z = 0
+        v = 0 
+        n = 0
+        
+        // implement alu logic here
+        
+        // ======================= Adder Logic =======================
+        adder.a = a;
+        adder.b = b;
+        adder.alufn_signal = alufn;
+        
+        z = adder.z;
+        v = adder.v;
+        n = adder.n;
+        
+        //out = adder.out; 
+        
+        // ======================= Comparator Logic =======================
+        compare.z = adder.z
+        compare.v = adder.v
+        compare.n = adder.n
+        compare.alufn = alufn
+        out = c{31x{b0}, compare.cmp}; // concatenation 
+    }
+}
