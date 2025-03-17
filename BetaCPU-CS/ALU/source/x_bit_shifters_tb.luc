@@ -1,0 +1,60 @@
+testbench x_bit_shifters_tb {
+    
+    x_bit_left_shifter dut(#SHIFT(8))
+    x_bit_right_shifter dut2(#SHIFT(8))
+    x_bit_right_shifter_arith dut3(#SHIFT(8))
+
+    test myTest {
+        // Init
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.shift = 0
+        dut.pad = 0
+        dut2.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut2.shift = 0
+        dut2.pad = 0
+        dut3.a = c{8b11110000, 8b0, 8b11110000, 8b0}
+        dut3.shift = 0
+        $tick() // capture initial state
+
+        // Test
+        
+        // Case 1: no shift
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.shift = 0
+        dut.pad = 0
+        dut2.a = c{8b0, 8b0, 8b11110000, 8b0}
+        dut2.shift = 0
+        dut2.pad = 0
+        dut3.a = c{8b11110000, 8b0, 8b11110000, 8b0}
+        dut3.shift = 0
+        $tick()
+        $assert(dut.out == c{8b0, 8b0, 8b0, 8b11110000})
+        $assert(dut2.out == c{8b0, 8b0, 8b11110000, 8b0})
+        $assert(dut3.out == c{8b11110000, 8b0, 8b11110000, 8b0})
+        
+        // Case 2: shift by 8, pad 0
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.shift = 1
+        dut.pad = 0
+        dut2.a = c{8b0, 8b0, 8b11110000, 8b0}
+        dut2.shift = 1
+        dut2.pad = 0
+        dut3.a = c{8b11110000, 8b0, 8b11110000, 8b0}
+        dut3.shift = 1
+        $tick()
+        $assert(dut.out == c{8b0, 8b0, 8b11110000, 8b0})
+        $assert(dut2.out == c{8b0, 8b0, 8b0, 8b11110000})
+        $assert(dut3.out == 32hFFF000F0)
+        
+        // Case 3: shift by 8, pad 1 (not applicable to arithmetic shift right)
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.shift = 1
+        dut.pad = 1
+        dut2.a = c{8b0, 8b0, 8b11110000, 8b0}
+        dut2.shift = 1
+        dut2.pad = 1
+        $tick()
+        $assert(dut.out == c{8b0, 8b0, 8b11110000, 8b11111111})
+        $assert(dut2.out == c{8b11111111, 8b0, 8b0, 8b11110000})
+    }
+}

@@ -104,13 +104,13 @@
             {
                 "file": {
                     "type": "DiskFile",
-                    "path": "source/x_bit_left_shifter.luc"
+                    "path": "source/x_bit_shifters.luc"
                 }
             },
             {
                 "file": {
                     "type": "DiskFile",
-                    "path": "source/x_bit_left_shifter_tb.luc"
+                    "path": "source/x_bit_shifters_tb.luc"
                 }
             }
         ],
