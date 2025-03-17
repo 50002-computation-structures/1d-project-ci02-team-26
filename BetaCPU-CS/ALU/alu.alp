@@ -94,6 +94,24 @@
                     "type": "DiskFile",
                     "path": "source/boolean_tb.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/mux_2.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/x_bit_left_shifter.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/x_bit_left_shifter_tb.luc"
+                }
             }
         ],
         "constraintFiles": [
