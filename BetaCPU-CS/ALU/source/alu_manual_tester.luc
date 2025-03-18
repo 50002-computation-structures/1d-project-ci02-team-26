@@ -7,7 +7,7 @@ module alu_manual_tester#(
     input a[32],
     input b[32],
     input alufn[6],
-    //input alu_induce_fault[2],
+    input alu_induce_fault[2],
     
     input current_test_addr[2][4],
     
@@ -21,7 +21,7 @@ module alu_manual_tester#(
     alu alu
     
     //==================== Constants ====================
-    const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
+    const SEVEN_SEG_DIV = $is_sim() ? 3 : 14 // original 100MHz is 16
     
     .clk(clk) {
         .rst(rst) {
@@ -34,7 +34,7 @@ module alu_manual_tester#(
         alu.a = a
         alu.b = b
         alu.alufn = alufn
-        out = alu.out
+        out = alu.out | alu_induce_fault // Induce fault by bitwise ORing the fault induction pins with the output
         
         // ALUFN table:
         // 0x00 000000: add

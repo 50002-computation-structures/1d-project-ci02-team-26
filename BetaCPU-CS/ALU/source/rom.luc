@@ -5,14 +5,13 @@ module rom (
     output b[32],      // ROM output for B
     output aluout[32]  // ROM expected output from the ALU
 ) {
-    // Recommend constraining the number of test cases to 99 since we want to display
-    // test cases intuitively
+    // Recommend constraining the number of test cases to 99 since we want to display test cases intuitively
     
-    const MAX_ADDR = 7 // TODO: define the maximum address!
-    // Key in all the ALUFN values you wish to evaluate here
+    const MAX_ADDR = 6 // TODO: define the maximum address!
+    
     // Note that the program will evaluate from the BOTTOM of the list to the top due to endianness
+    // Key in all the ALUFN values you wish to evaluate here
     const ALUFN = {
-        6h00,
         6h00,
         6h00,
         6h00,
@@ -24,38 +23,36 @@ module rom (
     
     // Key in all the values of A
     const A = {
-        32h08,
-        32h07,
-        32h06,
-        32h05,
-        32h04,
-        32h03,
-        32h02,
-        32h01
+        // Addition suite
+        32h0,
+        32h0,
+        32h0facade0,
+        32h0facade0,
+        32h000acade,
+        32b0,
+        32hdeadbeef
     }
     
     // Key in all the values of B
     const B = {
-        32h01,
-        32h01,
-        32h01,
-        32h01,
-        32h01,
-        32h01,
-        32h01,
-        32h01
+        32h7fffffff,
+        32h00facade,
+        32h0,
+        32h7fffffff,
+        32h00f00000,
+        32hdeadbeef,
+        32b0
     }
     
     // Key in the expected outputs
     const OUTPUT = {
-        32h09,
-        32h09, // Intentional error here
-        32h07,
-        32h06,
-        32h05,
-        32h04,
-        32h03, 
-        32h02
+        32h80000001,
+        32hff053522,
+        32h0facade0,
+        32h8facaddf,
+        32h00facade,
+        32hdeadbeef,
+        32hdeadbeef
     }
     
     always {

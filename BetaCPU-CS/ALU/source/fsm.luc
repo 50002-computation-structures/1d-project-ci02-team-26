@@ -22,7 +22,7 @@ module fsm (
     
     //==================== Constants ====================
     const SIZE = 32
-    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 13
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 25
     const CLK_FREQ = $is_sim() ? 1000 : 50000000 // Master clock frequency, 1000 for sim, 50M on hardware
     
     //==================== Signals ====================
@@ -49,7 +49,7 @@ module fsm (
         // to the common system clock AND the reset pin
         .rst(rst) {
             // Clock related DFFs
-            dff counter[SIZE]                                                 // Base counter, will ALWAYS run
+            dff counter[SIZE](#INIT(0))                                       // Base counter, will ALWAYS run
             dff speed_pointer[$clog2(SIZE)](#INIT(SLOW_CLOCK_DEFAULT_SPEED))  // Pointer to a location in the counter
             dff slow_clock_enable(#INIT(0))                 // Simple boolean flag for whether the slow clock is enabled
             
@@ -82,6 +82,8 @@ module fsm (
         decimal_renderer.value = current_addr.q
         rom.address = current_addr.q
         alu_manual.current_test_addr = decimal_renderer.digits
+        
+        alu_manual.alu_induce_fault = io_dip[2][7:6]
         
         if (states.q != States.MANUAL) {
             alu_manual.alufn = rom.alufn
