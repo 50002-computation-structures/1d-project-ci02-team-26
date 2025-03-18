@@ -1,4 +1,4 @@
-testbench alu_tb {    
+testbench alu_tb {
     alu dut()
 
     fun adder_tests() {

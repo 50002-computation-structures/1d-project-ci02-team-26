@@ -12,15 +12,17 @@ module fsm (
     
     //=================== FSM States ====================
     enum States {
-        MANUAL,         // Manual testing mode
-        AUTOMATIC_IDLE, // Automatic testing, idle (display)
-        AUTOMATIC_ADV,  // Automatic testing, advance to next test
-        TOGGLE_CLK      // Switch the clock on or off while in automatic mode
+        MANUAL,          // Manual testing mode
+        AUTOMATIC_IDLE,  // Automatic testing, idle (display)
+        AUTOMATIC_CHECK, // Automated testing, checking if ALU value is valid
+        AUTOMATIC_ADV,   // Automatic testing, advance to next test
+        TOGGLE_CLK,      // Switch the clock on or off while in automatic mode
+        AUTOMATIC_FAULT  // Fault encountered during automatic testing
     }
     
     //==================== Constants ====================
     const SIZE = 32
-    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 28
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 26
     const CLK_FREQ = $is_sim() ? 1000 : 100000000 // Master clock frequency, 1000 for sim, 100M on hardware
     
     //==================== Signals ====================
@@ -35,8 +37,8 @@ module fsm (
     
     .clk(clk) {
         // Clock divider unit initialisation
-        // This will provide our slow clock to test the ALU
-        edge_detector slow_clock_edge(#RISE(1), #FALL(0))
+        edge_detector slow_clock_edge(#RISE(1), #FALL(0))  // Set value on every rising edge
+        edge_detector slow_clock_edge2(#RISE(0), #FALL(1)) // Check value on every falling edge
         
         // Button edge detection (rising edge only)
         edge_detector io_button_edge[5](#RISE(5x{{1}}), #FALL(5x{{0}}))
@@ -71,9 +73,9 @@ module fsm (
         
         // ===================== Wiring for Slow Clock =====================
         case (slow_clock_enable.q) {
-            0: slow_clock_edge.in = 0
-            1:  slow_clock_edge.in = slow_clock
-            default: slow_clock_edge.in = 0
+            0: slow_clock_edge.in = 0; slow_clock_edge2.in = 0
+            1:  slow_clock_edge.in = slow_clock; slow_clock_edge2.in = slow_clock
+            default: slow_clock_edge.in = 0; slow_clock_edge2.in = 0
         }
         
         // ===================== Wiring for ROM and ALU tester =====================
@@ -103,7 +105,6 @@ module fsm (
         led[2:0] = alu_manual.led[2:0] // Only the z,v,n flags will be forwarded to the LED
         led[7] = slow_clock_enable.q && slow_clock // Show clock
         
-        
         // ===================== Wiring for Buttons =====================
         io_button_cond.in = io_button
         io_button_edge.in = io_button_cond.out
@@ -123,21 +124,41 @@ module fsm (
                 }
             States.AUTOMATIC_IDLE:
                 // In Idle state, we want to update the counter periodically, and detect button presses to transition to other states
-                // Upon every single clock pulse, kick into AUTOMATIC_ADV state to increment the actual value
+                // Upon clock rising edge, kick into AUTOMATIC_ADV state to increment ROM address
+                // Upon clock falling edge, kick into AUTOMATIC_CHECK state to check the validity of the ALU output
                 if (slow_clock_edge.out)
                 {
                     states.d = States.AUTOMATIC_ADV
                 }
-                // Switch mode here
+                else if (slow_clock_edge2.out) {
+                    states.d = States.AUTOMATIC_CHECK
+                }
                 else if (mode_button) {
                     current_addr.d = 0
                     slow_clock_enable.d = 0
                     states.d = States.MANUAL
                 }
                 // Toggle the clock running
-                else if (runstop_button)
-                {
+                else if (runstop_button) {
                     states.d = States.TOGGLE_CLK
+                }
+            States.AUTOMATIC_CHECK:
+                if (alu_manual.out != rom.aluout) {
+                    // Fault detected!
+                    states.d = States.AUTOMATIC_FAULT
+                } else {
+                    // No fault, go back to IDLE :)
+                    states.d = States.AUTOMATIC_IDLE
+                }
+            States.AUTOMATIC_FAULT:
+                // User can skip the faulted case using the runstop button
+                if (runstop_button) {
+                    led[6] = 0
+                    current_addr.d = current_addr.q + 1
+                    states.d = States.AUTOMATIC_IDLE
+                } else {
+                    // Keep the fault light on so long as it is faulted
+                    led[6] = 1
                 }
             States.TOGGLE_CLK:
                 slow_clock_enable.d = ~slow_clock_enable.q

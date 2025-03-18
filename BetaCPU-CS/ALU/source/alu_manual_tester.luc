@@ -13,7 +13,8 @@ module alu_manual_tester#(
     output led[8],
     output io_led[3][8],
     output io_segment[8],
-    output io_select[4]
+    output io_select[4],
+    output out[32]
 ) {
     //==================== Modules ====================
     alu alu
@@ -32,6 +33,7 @@ module alu_manual_tester#(
         alu.a = a
         alu.b = b
         alu.alufn = alufn
+        out = alu.out
         
         // ALUFN table:
         // 0x00 000000: add

@@ -12,12 +12,12 @@ The ALU tester consists of a manual mode tester and an automatic mode tester, wi
 The DIP switches are arranged in the following order:
 
 ```
-Leftmost <- ALU fault injection[7], ALUFN[5:0] | 
-    ALU Input B[31], ALU Input B[7:0]          | 
+Leftmost <- ALU fault injection[7:6], ALUFN[5:0] | 
+    ALU Input B[31], ALU Input B[7:0]            | 
     ALU Input A[31], ALU Input A[7:0] -> Rightmost
 ```
 
-- ALU fault injection: allows the user to inject a single bit flip fault within 
+- ALU fault injection: allows the user to inject bit flips within the ALU's final output 
 
 The buttons are arranged in the following order:
 
@@ -51,10 +51,10 @@ The LEDs at the side displays the following information:
 ALU Z - zero flag
 ALU V - overflow flag
 ALU N - negative flag
+N/A
+N/A
+N/A
 ALU Fault - lights up when the ALU output does not match the expected input
-N/A
-N/A
-N/A
 Clock - advancing clock for the automatic tester
 ```
 

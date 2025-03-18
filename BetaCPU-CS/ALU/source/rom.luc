@@ -10,8 +10,8 @@ module rom (
     
     const MAX_ADDR = 7 // TODO: define the maximum address!
     // Key in all the ALUFN values you wish to evaluate here
+    // Note that the program will evaluate from the BOTTOM of the list to the top due to endianness
     const ALUFN = {
-        6h00,
         6h00,
         6h00,
         6h00,
@@ -24,14 +24,14 @@ module rom (
     
     // Key in all the values of A
     const A = {
-        32h01,
+        32h08,
+        32h07,
+        32h06,
+        32h05,
+        32h04,
+        32h03,
         32h02,
-        32h01,
-        32h02,
-        32h01,
-        32h02,
-        32h01,
-        32h02
+        32h01
     }
     
     // Key in all the values of B
@@ -48,13 +48,13 @@ module rom (
     
     // Key in the expected outputs
     const OUTPUT = {
-        32h02,
-        32h02,
-        32h02,
-        32h02,
-        32h02,
-        32h02,
-        32h02,
+        32h09,
+        32h09, // Intentional error here
+        32h07,
+        32h06,
+        32h05,
+        32h04,
+        32h03, 
         32h02
     }
     
