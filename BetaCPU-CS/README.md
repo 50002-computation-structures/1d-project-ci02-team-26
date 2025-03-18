@@ -32,7 +32,10 @@ N/A     Change Mode     N/A
 
 ### Tester outputs
 
-The 7 segment display shows the current ALUFN (ALU function) in hexadecimals. 
+The 7 segment display shows the following:
+
+- Current test routine number in **decimals** on the leftmost 2 digits
+- Current ALUFN (ALU function) in **hexadecimals** on the rightmost 2 digits
 
 The IO shield LEDs display the following information: 
 
@@ -49,5 +52,9 @@ ALU Z - zero flag
 ALU V - overflow flag
 ALU N - negative flag
 ALU Fault - lights up when the ALU output does not match the expected input
+N/A
+N/A
+N/A
+Clock - advancing clock for the automatic tester
 ```
 

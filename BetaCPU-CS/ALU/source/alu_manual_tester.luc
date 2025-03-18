@@ -3,7 +3,13 @@ module alu_manual_tester#(
 (
     input clk,  // clock
     input rst,  // reset
-    input io_dip[3][8],
+    
+    input a[32],
+    input b[32],
+    input alufn[6],
+    
+    input current_test_addr[2][4],
+    
     output led[8],
     output io_led[3][8],
     output io_segment[8],
@@ -15,11 +21,6 @@ module alu_manual_tester#(
     //==================== Constants ====================
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
     
-    //===================== Signals =====================
-    sig alufn[6]
-    sig a[32]
-    sig b[32]
-    
     .clk(clk) {
         .rst(rst) {
             // 7 segment display
@@ -28,26 +29,8 @@ module alu_manual_tester#(
     }
     
     always {
-        // Base state init. By default, all inputs are set to 0
-        alu.a = 0
-        alu.b = 0
-        alu.alufn = 0
-        a = 0
-        b = 0
-        
-        // Inputs. Note that this will constrain inputs A and B to 8 bits only, however, the MSB of each DIP switch 
-        // will be mapped to the MSB of A and B, to make it easy to input signed integers
-        a[6:0] = io_dip[0][6:0]
-        a[31] = io_dip[0][7]
-        b[6:0] = io_dip[1][6:0]
-        b[31] = io_dip[1][7]
-        
-        alu.a[6:0] = a[6:0]
-        alu.a[31] = a[31]
-        alu.b[6:0] = b[6:0]
-        alu.b[31] = b[31]
-        
-        alufn = io_dip[2][5:0]
+        alu.a = a
+        alu.b = b
         alu.alufn = alufn
         
         // ALUFN table:
@@ -69,8 +52,8 @@ module alu_manual_tester#(
         led = c{5h00, alu.n, alu.v, alu.z}
         
         // Wiring the 7-segment display to ALUFN
-        seg.values[3] = 0
-        seg.values[2] = 0
+        seg.values[3] = current_test_addr[1]
+        seg.values[2] = current_test_addr[0]
         seg.values[1] = alufn[5:4] // MSBs
         seg.values[0] = alufn[3:0] // LSBs
         

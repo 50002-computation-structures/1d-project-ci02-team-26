@@ -190,12 +190,6 @@
                     "type": "DiskFile",
                     "path": "source/rom.luc"
                 }
-            },
-            {
-                "file": {
-                    "type": "DiskFile",
-                    "path": "source/bin_to_hex.luc"
-                }
             }
         ],
         "constraintFiles": [
