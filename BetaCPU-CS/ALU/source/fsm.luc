@@ -22,8 +22,8 @@ module fsm (
     
     //==================== Constants ====================
     const SIZE = 32
-    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 26
-    const CLK_FREQ = $is_sim() ? 1000 : 100000000 // Master clock frequency, 1000 for sim, 100M on hardware
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 13
+    const CLK_FREQ = $is_sim() ? 1000 : 50000000 // Master clock frequency, 1000 for sim, 50M on hardware
     
     //==================== Signals ====================
     sig slow_clock

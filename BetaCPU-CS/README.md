@@ -58,3 +58,12 @@ ALU Fault - lights up when the ALU output does not match the expected input
 Clock - advancing clock for the automatic tester
 ```
 
+### Instructions to use the tester
+
+The ALU tester has 2 primary modes: manual testing and automated testing
+
+Upon power up, the tester is initialised in manual testing mode only.
+
+1. Trigger the automated testing mode by pressing the centre button
+2. The left 2 digits on the 7 segment should display the decimal number for the test suite, while the right 2 digits should display the current ALUFN in hexadecimal
+3. 
