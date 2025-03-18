@@ -1,0 +1,52 @@
+module rom (
+    input address[8],  // ROM address input
+    output alufn[6],   // ROM output for ALU instruction
+    output a[32],      // ROM output for A
+    output b[32],      // ROM output for B
+    output aluout[32]  // ROM expected output from the ALU
+) {
+    const MAX_ADDR = 255 // TODO: define the maximum address!
+    // Key in all the ALUFN values you wish to evaluate here
+    const ALUFN = {
+        6h32,
+        6h00
+    }
+    
+    // Key in all the values of A
+    const A = {
+        32h00,
+        32h00
+    }
+    
+    // Key in all the values of B
+    const B = {
+        32h00,
+        32h00
+    }
+    
+    // Key in the expected outputs
+    const OUTPUT = {
+        32h00,
+        32h00
+    }
+    
+    always {
+        // Default value
+        alufn = 0
+        a = 0
+        b = 0
+        aluout = 0
+        
+        if (address > MAX_ADDR) {
+            alufn = 0
+            a = 0
+            b = 0
+            aluout = 0
+        } else {
+            alufn = ALUFN[address]
+            a = A[address]
+            b = B[address]
+            aluout = OUTPUT[address]
+        }
+    }
+}
