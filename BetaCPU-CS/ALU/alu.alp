@@ -196,12 +196,6 @@
             {
                 "file": {
                     "type": "Component",
-                    "path": "Constraints/io_v1.acf"
-                }
-            },
-            {
-                "file": {
-                    "type": "Component",
                     "path": "Constraints/alchitry.acf"
                 }
             },
@@ -209,6 +203,12 @@
                 "file": {
                     "type": "DiskFile",
                     "path": "constraint/main_constraint.acf"
+                }
+            },
+            {
+                "file": {
+                    "type": "Component",
+                    "path": "Constraints/io_v1_pulldown.acf"
                 }
             }
         ],
