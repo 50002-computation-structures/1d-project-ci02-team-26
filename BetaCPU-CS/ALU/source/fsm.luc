@@ -22,8 +22,8 @@ module fsm (
     
     //==================== Constants ====================
     const SIZE = 32
-    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 25
-    const CLK_FREQ = $is_sim() ? 1000 : 50000000 // Master clock frequency, 1000 for sim, 50M on hardware
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 25 // Original 100MHz frequency uses 26
+    const CLK_FREQ = $is_sim() ? 1000 : 25000000 // Master clock frequency, 1000 for sim, 25M on hardware
     
     //==================== Signals ====================
     sig slow_clock
@@ -123,6 +123,9 @@ module fsm (
                     current_addr.d = 0
                     slow_clock_enable.d = 1
                     states.d = States.AUTOMATIC_IDLE
+                } else {
+                    slow_clock_enable.d = 0
+                    states.d = States.MANUAL
                 }
             States.AUTOMATIC_IDLE:
                 // In Idle state, we want to update the counter periodically, and detect button presses to transition to other states
@@ -144,6 +147,9 @@ module fsm (
                 else if (runstop_button) {
                     states.d = States.TOGGLE_CLK
                 }
+                else {
+                    states.d = states.q
+                }
             States.AUTOMATIC_CHECK:
                 if (alu_manual.out != rom.aluout) {
                     // Fault detected!
@@ -161,6 +167,7 @@ module fsm (
                 } else {
                     // Keep the fault light on so long as it is faulted
                     led[6] = 1
+                    states.d = states.q
                 }
             States.TOGGLE_CLK:
                 slow_clock_enable.d = ~slow_clock_enable.q
