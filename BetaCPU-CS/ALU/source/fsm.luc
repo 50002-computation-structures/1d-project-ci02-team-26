@@ -1,0 +1,118 @@
+module fsm (
+    input clk,  // clock
+    input rst,  // reset
+    input io_button[5],      // 5 buttons on IO Shield
+    output out  // outputs the current state based on button inputs
+) {
+    
+    //=================== FSM States ====================
+    enum States {
+        MANUAL,         // Manual testing mode
+        AUTOMATIC_IDLE, // Automatic testing, idle (display)
+        AUTOMATIC_ADV,   // Automatic testing, advance to next test
+        TOGGLE_CLK
+    }
+    
+    //==================== Constants ====================
+    const SIZE = 32
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 8 : 28 // put 8 for sim, 28 for hardware
+    const CLK_FREQ = $is_sim() ? 1000 : 100000000 // Master clock frequency, 1000 for sim, 100M on hardware
+    
+    //==================== Signals ====================
+    sig slow_clock
+    sig runstop_button
+    sig mode_button
+    
+    .clk(clk) {
+        // Clock divider unit initialisation
+        // This will provide our slow clock to test the ALU
+        edge_detector slow_clock_edge(#RISE(1), #FALL(0))
+        
+        // Button edge detection (rising edge only)
+        edge_detector io_button_edge[5](#RISE(5x{{1}}), #FALL(5x{{0}}))
+        button_conditioner io_button_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
+        
+        //============= Reset Connection Block ==============
+        // This block connects all devices initialised inside 
+        // to the common system clock AND the reset pin
+        .rst(rst) {
+            // Clock related DFFs
+            dff counter[SIZE]                                                 // Base counter, will ALWAYS run
+            dff speed_pointer[$clog2(SIZE)](#INIT(SLOW_CLOCK_DEFAULT_SPEED))  // Pointer to a location in the counter
+            dff slow_clock_enable(#INIT(0))                 // Simple boolean flag for whether the slow clock is enabled
+            
+            // FSM related DFFs
+            dff states[$width(States)](#INIT(States.MANUAL)) // Tracks the current state of the FSM. Default state is MANUAL
+            dff current_addr[SIZE](#INIT(0))                // The current address in ROM
+        }
+    }
+    
+    always {
+        // ===================== Clock divider init =====================
+        counter.d = counter.q + 1                 // Always increment the master counter
+        slow_clock_enable.d = slow_clock_enable.q // slow_clock_enable is user-changed. Reminder that this enables the clock outut
+        speed_pointer.d = speed_pointer.q         // speed_pointer is user-changed. Reminder that this sets which DFF is outputting the signal
+        slow_clock = counter.q[speed_pointer.q]   // slow_clock is an alias to the counter's signal output dependent of the speed pointer, but before the
+                                                  // slow_clock_enabled gate, so this signal will ALWAYS pulse
+        
+        // ===================== FSM data storage init =====================
+        states.d = states.q
+        current_addr.d = current_addr.q
+        
+        // ===================== Wiring for Slow Clock =====================
+        // The output of the rising edge detector will be the actual clock that increments the counter
+        case (slow_clock_enable.q){
+        0:
+            slow_clock_edge.in = 0 // always don't increment or decrement
+        1: 
+            slow_clock_edge.in = slow_clock 
+        default:
+            slow_clock_edge.in = 0
+        }
+        
+        // ===================== Wiring for Buttons =====================
+        // Connect button conditioners to IO buttons, and pulse a single signal only upon button release using io_button_edge
+        io_button_cond.in = io_button
+        io_button_edge.in = io_button_cond.out
+        // Connect debounced button signals to aliases for easy access
+        mode_button = io_button_edge.out[1]       // Middle button
+        runstop_button = io_button_edge.out[0]    // Top button
+        //slower_button = io_button_edge.out[2]   // Bottom
+        //increase_button = io_button_edge.out[4] // Right
+        //decrease_button = io_button_edge.out[3] // Left
+        
+        case(states.q) {
+            States.MANUAL:
+                if (mode_button) {
+                    states.d = States.AUTOMATIC_IDLE
+                }
+            States.AUTOMATIC_IDLE:
+                // In Idle state, we want to update the counter periodically, and detect button presses to transition to other states
+                // Upon every single clock pulse, kick into UPDATE state to increment the actual value
+                if (slow_clock_edge.out)
+                {
+                    states.d = States.AUTOMATIC_ADV
+                }
+                // Switch mode here
+                else if (mode_button) {
+                    states.d = States.MANUAL
+                }
+                // Toggle the clock running
+                else if (runstop_button)
+                {
+                    states.d = States.TOGGLE_CLK
+                }
+            States.TOGGLE_CLK:
+                slow_clock_enable.d = ~slow_clock_enable.q
+                states.d = States.AUTOMATIC_IDLE
+            States.AUTOMATIC_ADV:
+                // The Advance state advances the current address by 1
+                current_addr.d = current_addr.q + 1
+                states.d = States.AUTOMATIC_IDLE
+            default:
+                states.d = States.MANUAL
+        }
+        
+        out = 0
+    }
+}
