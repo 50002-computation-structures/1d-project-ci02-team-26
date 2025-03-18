@@ -14,28 +14,35 @@ module alu_manual_tester#(
     const SIZE=32
     
     always {
-        // Initialisation
+        // Base state init. By default, all inputs are set to 0
         alu.a = 0
         alu.b = 0
+        alu.alufn = 0
         
-        // Inputs
-        alu.a = io_dip[0]
-        alu.b = io_dip[1]
+        // Inputs. Note that this will constrain inputs A and B to 8 bits only, however, the MSB of each DIP switch 
+        // will be mapped to the MSB of A and B, to make it easy to input signed integers
+        alu.a[6:0] = io_dip[0][6:0]
+        alu.a[31] = io_dip[0][7]
+        alu.b[6:0] = io_dip[1][6:0]
+        alu.b[31] = io_dip[1][7]
         alu.alufn = io_dip[2][5:0]
-        // ALUFN table:
-        // 0x00: add
-        // 0x01: subtract
-        // 0x02: multiply
-        // 0x18: AND
-        // 0x1E: OR
-        // 0x16: XOR
-        // 0x1A: "A" pass through
-        // 0x20: Bit shift left
-        // 0x21: Bit shift right
-        // 0x23: Bit shift right with sign extension
         
-        // Outputs, with flags zero, overflow and negative 
+        // ALUFN table:
+        // 0x00 000000: add
+        // 0x01 000001: subtract
+        // 0x02 000010: multiply
+        // 0x18 011000: AND
+        // 0x1E 011110: OR
+        // 0x16 010110: XOR
+        // 0x1A 011010: "A" pass through
+        // 0x20 100000: Bit shift left
+        // 0x21 100001: Bit shift right
+        // 0x23 100011: Bit shift right with sign extension
+        
+        // Outputs: zero, overflow and negative, 8 MSBs and 8 LSBs
         io_led = {c{5h00, alu.z, alu.v, alu.n}, alu.out[SIZE-1:SIZE-8], alu.out[7:0]}
+        
+        
         io_segment = 0
         io_select = 4hF
     }
