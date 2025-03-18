@@ -9,7 +9,7 @@ module rca #(
     output s[SIZE]
 ) {
     // Initialise our full adder units
-    fa fa[32];
+    fa fa[SIZE];
     
     always {
         // Add inputs

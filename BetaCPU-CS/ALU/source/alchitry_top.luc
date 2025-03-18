@@ -15,10 +15,10 @@ module alchitry_top (
     sig rst                 // reset signal
     
     //==================== Constants ====================
-    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // 1000 for sim, 10000000 otherwise in hardware
+    //const CLK_FREQ = $is_sim() ? 1000 : 10000000 // 1000 for sim, 10000000 otherwise in hardware
     
-    //==================== Modules ====================
-    alu_manual_tester alu_manual(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
+    //===================== Modules =====================
+    fsm fsm(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip))
     
     //============= Clock Connection Block ==============
     // This block connects all devices initialised inside 
@@ -41,10 +41,10 @@ module alchitry_top (
         io_select = 4hF
         io_segment = 8h00
         
-        // Wiring for ALU_Manual to link to the IO components
-        io_segment = alu_manual.io_segment
-        io_select = alu_manual.io_select
-        io_led = alu_manual.io_led
-        led = alu_manual.led
+        // Outputs linked to the FSM
+        led = fsm.led
+        io_led = fsm.io_led
+        io_segment = fsm.io_segment
+        io_select = fsm.io_select
     }
 }

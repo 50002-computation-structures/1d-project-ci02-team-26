@@ -3,7 +3,6 @@ module alu_manual_tester#(
 (
     input clk,  // clock
     input rst,  // reset
-    input io_button[5],
     input io_dip[3][8],
     output led[8],
     output io_led[3][8],
@@ -14,7 +13,6 @@ module alu_manual_tester#(
     alu alu
     
     //==================== Constants ====================
-    const SIZE=32
     const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
     
     //===================== Signals =====================
@@ -22,7 +20,7 @@ module alu_manual_tester#(
     sig a[32]
     sig b[32]
     
-    .clk(clk) {        
+    .clk(clk) {
         .rst(rst) {
             // 7 segment display
             multi_seven_seg seg(#DIV(SEVEN_SEG_DIV))

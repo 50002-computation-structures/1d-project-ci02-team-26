@@ -1,16 +1,21 @@
 module fsm (
     input clk,  // clock
-    input rst,  // reset
-    input io_button[5],      // 5 buttons on IO Shield
-    output out  // outputs the current state based on button inputs
+    input rst,  // reset    
+    
+    input io_button[5],
+    input io_dip[3][8],
+    output led[8],
+    output io_led[3][8],
+    output io_segment[8],
+    output io_select[4]
 ) {
     
     //=================== FSM States ====================
     enum States {
         MANUAL,         // Manual testing mode
         AUTOMATIC_IDLE, // Automatic testing, idle (display)
-        AUTOMATIC_ADV,   // Automatic testing, advance to next test
-        TOGGLE_CLK
+        AUTOMATIC_ADV,  // Automatic testing, advance to next test
+        TOGGLE_CLK      // Switch the clock on or off while in automatic mode
     }
     
     //==================== Constants ====================
@@ -22,6 +27,9 @@ module fsm (
     sig slow_clock
     sig runstop_button
     sig mode_button
+    
+    //==================== Signals ====================
+    alu_manual_tester alu_manual(.clk(clk), .rst(rst), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
     
     .clk(clk) {
         // Clock divider unit initialisation
@@ -70,8 +78,13 @@ module fsm (
             slow_clock_edge.in = 0
         }
         
+        // ===================== Wiring for LED outputs =====================
+        io_segment = alu_manual.io_segment
+        io_select = alu_manual.io_select
+        io_led = alu_manual.io_led
+        led = alu_manual.led
+        
         // ===================== Wiring for Buttons =====================
-        // Connect button conditioners to IO buttons, and pulse a single signal only upon button release using io_button_edge
         io_button_cond.in = io_button
         io_button_edge.in = io_button_cond.out
         // Connect debounced button signals to aliases for easy access
@@ -88,7 +101,7 @@ module fsm (
                 }
             States.AUTOMATIC_IDLE:
                 // In Idle state, we want to update the counter periodically, and detect button presses to transition to other states
-                // Upon every single clock pulse, kick into UPDATE state to increment the actual value
+                // Upon every single clock pulse, kick into AUTOMATIC_ADV state to increment the actual value
                 if (slow_clock_edge.out)
                 {
                     states.d = States.AUTOMATIC_ADV
@@ -112,7 +125,5 @@ module fsm (
             default:
                 states.d = States.MANUAL
         }
-        
-        out = 0
     }
 }
