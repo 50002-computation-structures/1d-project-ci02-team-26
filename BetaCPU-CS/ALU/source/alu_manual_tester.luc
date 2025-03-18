@@ -5,27 +5,52 @@ module alu_manual_tester#(
     input rst,  // reset
     input io_button[5],
     input io_dip[3][8],
+    output led[8],
     output io_led[3][8],
     output io_segment[8],
     output io_select[4]
 ) {
+    //==================== Modules ====================
     alu alu
     
+    //==================== Constants ====================
     const SIZE=32
+    const SEVEN_SEG_DIV = $is_sim() ? 3 : 16
+    
+    //===================== Signals =====================
+    sig alufn[6]
+    sig a[32]
+    sig b[32]
+    
+    .clk(clk) {        
+        .rst(rst) {
+            // 7 segment display
+            multi_seven_seg seg(#DIV(SEVEN_SEG_DIV))
+        }
+    }
     
     always {
         // Base state init. By default, all inputs are set to 0
         alu.a = 0
         alu.b = 0
         alu.alufn = 0
+        a = 0
+        b = 0
         
         // Inputs. Note that this will constrain inputs A and B to 8 bits only, however, the MSB of each DIP switch 
         // will be mapped to the MSB of A and B, to make it easy to input signed integers
-        alu.a[6:0] = io_dip[0][6:0]
-        alu.a[31] = io_dip[0][7]
-        alu.b[6:0] = io_dip[1][6:0]
-        alu.b[31] = io_dip[1][7]
-        alu.alufn = io_dip[2][5:0]
+        a[6:0] = io_dip[0][6:0]
+        a[31] = io_dip[0][7]
+        b[6:0] = io_dip[1][6:0]
+        b[31] = io_dip[1][7]
+        
+        alu.a[6:0] = a[6:0]
+        alu.a[31] = a[31]
+        alu.b[6:0] = b[6:0]
+        alu.b[31] = b[31]
+        
+        alufn = io_dip[2][5:0]
+        alu.alufn = alufn
         
         // ALUFN table:
         // 0x00 000000: add
@@ -39,11 +64,19 @@ module alu_manual_tester#(
         // 0x21 100001: Bit shift right
         // 0x23 100011: Bit shift right with sign extension
         
-        // Outputs: zero, overflow and negative, 8 MSBs and 8 LSBs
-        io_led = {c{5h00, alu.z, alu.v, alu.n}, alu.out[SIZE-1:SIZE-8], alu.out[7:0]}
+        // IO shield LED outputs: ALU Out, B, A, with 1 MSB and 7 LSBs
+        io_led = {c{alu.out[31], alu.out[6:0]}, c{b[31], b[6:0]}, c{a[31], a[6:0]}}
         
+        // LED outputs: zero, overflow, negative, fault (TODO), CLK
+        led = c{5h00, alu.n, alu.v, alu.z}
         
-        io_segment = 0
-        io_select = 4hF
+        // Wiring the 7-segment display to ALUFN
+        seg.values[3] = 0
+        seg.values[2] = 0
+        seg.values[1] = alufn[5:4] // MSBs
+        seg.values[0] = alufn[3:0] // LSBs
+        
+        io_segment = ~seg.seg   // Selects which segment
+        io_select = ~seg.sel    // Selects which digit
     }
 }

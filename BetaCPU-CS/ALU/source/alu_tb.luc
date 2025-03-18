@@ -1,15 +1,6 @@
-testbench alu_tb {
-    sig clk
-    
+testbench alu_tb {    
     alu dut()
 
-    fun tick_clock() {
-        clk = 1
-        $silent_tick() // tick without capturing signals
-        clk = 0
-        $tick()
-    }
-    
     fun adder_tests() {
         // Zero tests
         dut.alufn = 6h00
@@ -232,7 +223,6 @@ testbench alu_tb {
         dut.a = 32b0
         dut.b = 32b0
         
-        clk = 0 // initialize the value
         $tick() // capture initial state
 
         // Testing

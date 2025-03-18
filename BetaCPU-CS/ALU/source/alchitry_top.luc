@@ -11,26 +11,40 @@ module alchitry_top (
     input io_dip[3][8]       // DIP switches on IO Shield
 ) {
     
+    //===================== Signals =====================
     sig rst                 // reset signal
     
+    //==================== Constants ====================
+    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // 1000 for sim, 10000000 otherwise in hardware
+    
+    //==================== Modules ====================
+    alu_manual_tester alu_manual(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
+    
+    //============= Clock Connection Block ==============
+    // This block connects all devices initialised inside 
+    // to the common system clock
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
     }
-    const CLK_FREQ = $is_sim() ? 1000 : 10000000 // 1000 for sim, 10000000 otherwise in hardware
-    
-    alu_manual_tester alu_manual(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ)) 
     
     always {
+        // Initialisation conditions
         reset_cond.in = ~rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
-        led = 8h00              // turn LEDs off
-        usb_tx = usb_rx         // loop serial port
+        led = 8h00              // turn non driven LEDs off
+        usb_tx = usb_rx         // echo the serial data
         
-        // For ALU tester functionality
+        // Initialisation for I/O board
+        io_led = 3x{ {8h00} }
+        io_select = 4hF
+        io_segment = 8h00
+        
+        // Wiring for ALU_Manual to link to the IO components
         io_segment = alu_manual.io_segment
-        io_select = alu_manual.io_select         
+        io_select = alu_manual.io_select
         io_led = alu_manual.io_led
+        led = alu_manual.led
     }
 }
