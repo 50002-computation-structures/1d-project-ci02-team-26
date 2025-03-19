@@ -59,15 +59,21 @@ N/A
 N/A
 N/A
 ALU Fault - lights up when the ALU output does not match the expected input
-Clock - advancing clock for the automatic tester
+Clock - clock for the automatic tester, rising edge will load new inputs from ROM, 
+        falling edge will engage the automated testing module
 ```
 
 #### Instructions to use the tester
 
 The ALU tester has 2 primary modes: manual testing and automated testing
 
-Upon power up, the tester is initialised in manual testing mode only.
+Upon power up, the tester is initialized in manual testing mode only.
 
-1. Trigger the automated testing mode by pressing the centre button
-2. The left 2 digits on the 7 segment should display the decimal number for the test suite, while the right 2 digits should display the current ALUFN in hexadecimal
-3. 
+To use the automated testing feature:
+
+1. Trigger the automated testing mode by pressing the centre button, this will transition it out of manual mode
+2. The left 2 digits on the 7 segment should display the decimal number for the test suite, which covers up to 26 test cases, while the right 2 digits should display the current ALUFN in hexadecimal
+3. You can pause the clock at any time to inspect the results using the top button
+4. You can induce an error in the ALU checker by turning on the `ALU fault injection[7:6]` switches on the leftmost DIP switch, which performs an OR with the ALU's 2 output LSBs.
+5. Upon an error in the automated testing routine, the ALU Fault light will turn on and halt at the test case with the error. To continue testing more cases, the user needs to press the top button to ignore the current fault and skip to the next test case.
+6. The automated tester can be set back to manual mode at any time by pressing the centre button
