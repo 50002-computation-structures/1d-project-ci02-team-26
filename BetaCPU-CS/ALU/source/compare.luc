@@ -1,0 +1,27 @@
+// Comparator is IMPLEMENTED, not yet VALIDATED
+
+module compare (
+    input z,
+    input v,
+    input n,
+    input alufn[6],
+    output cmp
+) {
+    
+    mux_4 compare_mux
+    
+    always {
+        // Comparison
+        compare_mux.s0 = alufn[1]
+        compare_mux.s1 = alufn[2]
+        // Mux has 4 bits
+        // When s1, s0 = 00, output=x
+        //               01, output=z
+        //               10, output=n^v
+        //               11, output=n^v | z
+        compare_mux.in = c{(n^v)|z, n^v, z, 1bx}
+        
+        cmp = compare_mux.out
+    }
+}
+

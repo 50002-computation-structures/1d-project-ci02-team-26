@@ -1,0 +1,176 @@
+module rom (
+    input address[16],  // ROM address input
+    output alufn[6],   // ROM output for ALU instruction
+    output a[32],      // ROM output for A
+    output b[32],      // ROM output for B
+    output aluout[32]  // ROM expected output from the ALU
+) {
+    // Recommend constraining the number of test cases to 99 since we want to display test cases intuitively
+    
+    // Note that the program will evaluate from the BOTTOM of the list to the top due to endianness
+    // Key in all the ALUFN values you wish to evaluate here
+    const ALUFN = {
+        // Compare suite
+        6h35,
+        6h35,
+        6h35,
+        6h33,
+        6h33,
+        // Shifter suite
+        6h23,
+        6h21,
+        6h21,
+        6h21,
+        6h20,
+        6h20,
+        6h20,
+        6h20,
+        // Boolean suite
+        6h1a,
+        6h16,
+        6h1e,
+        6h18,
+        // Multiplier suite
+        6h02,
+        6h02,
+        6h02,
+        // Adder suite
+        6h01,
+        6h01,
+        6h01,
+        6h00,
+        6h00,
+        6h00,
+        6h00
+    }
+    
+    // Key in all the values of A
+    const A = {
+        // Compare suite
+        32hc0ffef,
+        32hc0ffee,
+        32hbeef,
+        32hc0ffee,
+        32hc0ffee,
+        // Shifter suite
+        32hf000ff00,
+        32h80000000,
+        32h0000ff00,
+        32h0000ff00,
+        32hfffffff1,
+        32hf000ff00,
+        32h0000ff00,
+        32h0000ff00,
+        // Boolean suite
+        32hfffffff0,
+        32hfffffff0,
+        32hfffffff0,
+        32hffffffff,
+        // Multiplier suite
+        32h0000beef,
+        32h0,
+        32hdeadbeef,
+        // Adder suite
+        32h0,
+        32h0,
+        32h0facade0,
+        32h0facade0,
+        32h000acade,
+        32b0,
+        32hdeadbeef
+    }
+    
+    // Key in all the values of B
+    const B = {
+        // Compare suite
+        32hc0ffee,
+        32hc0ffee,
+        32hc0ffee,
+        32hbeef,
+        32hc0ffee,
+        // Shifter suite
+        32d4,
+        32d31,
+        32d4,
+        32d0,
+        32d31,
+        32d4,
+        32d4,
+        32d0,
+        // Boolean suite
+        32h0000fff0,
+        32h0000fff0,
+        32h0000fff0,
+        32h0000ffff,
+        // Multiplier suite
+        32h0000beef,
+        32hdeadbeef,
+        32h0,
+        // Adder suite
+        32h7fffffff,
+        32h00facade,
+        32h0,
+        32h7fffffff,
+        32h00f00000,
+        32hdeadbeef,
+        32b0
+    }
+    
+    // Key in the expected outputs
+    const OUTPUT = {
+        // Compare suite
+        32h00000000,
+        32h00000000,
+        32h00000001,
+        32h00000000,
+        32h00000001,
+        // Shifter suite
+        32hff000ff0,
+        32h00000001,
+        32h00000ff0,
+        32h0000ff00,
+        32h80000000,
+        32h000ff000,
+        32h000ff000,
+        32h0000ff00,
+        // Boolean suite
+        32hfffffff0,
+        32hffff0000,
+        32hfffffff0,
+        32h0000ffff,
+        // Multiplier suite
+        32h8e67a321,
+        32h0,
+        32h0,
+        // Adder suite
+        32h80000001,
+        32hff053522,
+        32h0facade0,
+        32h8facaddf,
+        32h00facade,
+        32hdeadbeef,
+        32hdeadbeef
+    }
+    
+    const MAX_ADDR = $width(ALUFN, 0)
+    
+    always {
+        // Default value
+        alufn = 0
+        a = 0
+        b = 0
+        aluout = 0
+        
+        if (address > MAX_ADDR) {
+            alufn = 0
+            a = 0
+            b = 0
+            aluout = 0
+        } else {
+            alufn = ALUFN[address]
+            a = A[address]
+            b = B[address]
+            aluout = OUTPUT[address]
+        }
+    }
+}

@@ -1,0 +1,5 @@
+STANDARD(LVCMOS33) { // standard 3.3V IO standard
+    // add pin constraints here
+    // pin SIGNAL PORT OPTIONAL_ATTRIBUTES
+    pin clk2 CLOCK FREQUENCY(25MHz)
+}

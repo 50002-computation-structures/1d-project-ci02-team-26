@@ -1,0 +1,183 @@
+module fsm (
+    input clk,  // clock
+    input rst,  // reset    
+    
+    input io_button[5],
+    input io_dip[3][8],
+    output led[8],
+    output io_led[3][8],
+    output io_segment[8],
+    output io_select[4]
+) {
+    
+    //=================== FSM States ====================
+    enum States {
+        MANUAL,          // Manual testing mode
+        AUTOMATIC_IDLE,  // Automatic testing, idle (display)
+        AUTOMATIC_CHECK, // Automated testing, checking if ALU value is valid
+        AUTOMATIC_ADV,   // Automatic testing, advance to next test
+        TOGGLE_CLK,      // Switch the clock on or off while in automatic mode
+        AUTOMATIC_FAULT  // Fault encountered during automatic testing
+    }
+    
+    //==================== Constants ====================
+    const SIZE = 32
+    const SLOW_CLOCK_DEFAULT_SPEED = $is_sim() ? 9 : 25 // Original 100MHz frequency uses 26
+    const CLK_FREQ = $is_sim() ? 1000 : 25000000 // Master clock frequency, 1000 for sim, 25M on hardware
+    
+    //==================== Signals ====================
+    sig slow_clock
+    sig runstop_button
+    sig mode_button
+    
+    //==================== Modules ====================
+    alu_manual_tester alu_manual(.clk(clk), .rst(rst), #CLK_FREQ(CLK_FREQ))
+    bin_to_dec decimal_renderer(#DIGITS(2), #LEADING_ZEROS(1)) // 7 segment display for current addr only
+    rom rom
+    
+    .clk(clk) {
+        // Clock divider unit initialisation
+        edge_detector slow_clock_edge(#RISE(1), #FALL(0))  // Set value on every rising edge
+        edge_detector slow_clock_edge2(#RISE(0), #FALL(1)) // Check value on every falling edge
+        
+        // Button edge detection (rising edge only)
+        edge_detector io_button_edge[5](#RISE(5x{{1}}), #FALL(5x{{0}}))
+        button_conditioner io_button_cond[5](#CLK_FREQ(5x{{CLK_FREQ}}))
+        
+        //============= Reset Connection Block ==============
+        // This block connects all devices initialised inside 
+        // to the common system clock AND the reset pin
+        .rst(rst) {
+            // Clock related DFFs
+            dff counter[SIZE](#INIT(0))                                       // Base counter, will ALWAYS run
+            dff speed_pointer[$clog2(SIZE)](#INIT(SLOW_CLOCK_DEFAULT_SPEED))  // Pointer to a location in the counter
+            dff slow_clock_enable(#INIT(0))                 // Simple boolean flag for whether the slow clock is enabled
+            
+            // FSM related DFFs
+            dff states[$width(States)](#INIT(States.MANUAL)) // Tracks the current state of the FSM. Default state is MANUAL
+            dff current_addr[7](#INIT(0))                // The current address in ROM
+        }
+    }
+    
+    always {
+        // ===================== Clock divider init =====================
+        counter.d = counter.q + 1                 // Always increment the master counter
+        slow_clock_enable.d = slow_clock_enable.q // slow_clock_enable is user-changed. Reminder that this enables the clock outut
+        speed_pointer.d = speed_pointer.q         // speed_pointer is user-changed. Reminder that this sets which DFF is outputting the signal
+        slow_clock = counter.q[speed_pointer.q]   // slow_clock is an alias to the counter's signal output dependent of the speed pointer, but before the
+                                                  // slow_clock_enabled gate, so this signal will ALWAYS pulse
+        
+        // ===================== FSM data storage init =====================
+        states.d = states.q
+        current_addr.d = current_addr.q
+        
+        // ===================== Wiring for Slow Clock =====================
+        case (slow_clock_enable.q) {
+            0: slow_clock_edge.in = 0; slow_clock_edge2.in = 0
+            1:  slow_clock_edge.in = slow_clock; slow_clock_edge2.in = slow_clock
+            default: slow_clock_edge.in = 0; slow_clock_edge2.in = 0
+        }
+        
+        // ===================== Wiring for ROM and ALU tester =====================
+        decimal_renderer.value = current_addr.q
+        rom.address = current_addr.q
+        alu_manual.current_test_addr = decimal_renderer.digits
+        
+        alu_manual.alu_induce_fault = io_dip[2][7:6]
+        
+        if (states.q != States.MANUAL) {
+            alu_manual.alufn = rom.alufn
+            alu_manual.a = rom.a
+            alu_manual.b = rom.b
+        } else {
+            alu_manual.alufn = io_dip[2][5:0]
+            alu_manual.a[6:0] = io_dip[0][6:0]
+            alu_manual.a[30:7] = 0
+            alu_manual.a[31] = io_dip[0][7]
+            alu_manual.b[6:0] = io_dip[1][6:0]
+            alu_manual.b[30:7] = 0
+            alu_manual.b[31] = io_dip[1][7]
+        }
+        
+        // ===================== Wiring for LED outputs =====================
+        led = 0
+        io_segment = alu_manual.io_segment
+        io_select = alu_manual.io_select
+        io_led = alu_manual.io_led
+        led[2:0] = alu_manual.led[2:0] // Only the z,v,n flags will be forwarded to the LED
+        led[7] = slow_clock_enable.q && slow_clock // Show clock
+        
+        // ===================== Wiring for Buttons =====================
+        io_button_cond.in = io_button
+        io_button_edge.in = io_button_cond.out
+        // Aliases of debounced button signals for easy access
+        mode_button = io_button_edge.out[1]       // Middle button
+        runstop_button = io_button_edge.out[0]    // Top button
+        //slower_button = io_button_edge.out[2]   // Bottom
+        //increase_button = io_button_edge.out[4] // Right
+        //decrease_button = io_button_edge.out[3] // Left
+        
+        case(states.q) {
+            States.MANUAL:
+                if (mode_button) {
+                    current_addr.d = 0
+                    slow_clock_enable.d = 1
+                    states.d = States.AUTOMATIC_IDLE
+                } else {
+                    slow_clock_enable.d = 0
+                    states.d = States.MANUAL
+                }
+            States.AUTOMATIC_IDLE:
+                // In Idle state, we want to update the counter periodically, and detect button presses to transition to other states
+                // Upon clock rising edge, kick into AUTOMATIC_ADV state to increment ROM address
+                // Upon clock falling edge, kick into AUTOMATIC_CHECK state to check the validity of the ALU output
+                if (slow_clock_edge.out)
+                {
+                    states.d = States.AUTOMATIC_ADV
+                }
+                else if (slow_clock_edge2.out) {
+                    states.d = States.AUTOMATIC_CHECK
+                }
+                else if (mode_button) {
+                    current_addr.d = 0
+                    slow_clock_enable.d = 0
+                    states.d = States.MANUAL
+                }
+                // Toggle the clock running
+                else if (runstop_button) {
+                    states.d = States.TOGGLE_CLK
+                }
+                else {
+                    states.d = states.q
+                }
+            States.AUTOMATIC_CHECK:
+                if (alu_manual.out != rom.aluout) {
+                    // Fault detected!
+                    states.d = States.AUTOMATIC_FAULT
+                } else {
+                    // No fault, go back to IDLE :)
+                    states.d = States.AUTOMATIC_IDLE
+                }
+            States.AUTOMATIC_FAULT:
+                // User can skip the faulted case using the runstop button
+                if (runstop_button) {
+                    led[6] = 0
+                    current_addr.d = current_addr.q + 1
+                    states.d = States.AUTOMATIC_IDLE
+                } else {
+                    // Keep the fault light on so long as it is faulted
+                    led[6] = 1
+                    states.d = states.q
+                }
+            States.TOGGLE_CLK:
+                slow_clock_enable.d = ~slow_clock_enable.q
+                states.d = States.AUTOMATIC_IDLE
+            States.AUTOMATIC_ADV:
+                // The Advance state advances the current address by 1
+                current_addr.d = current_addr.q + 1
+                states.d = States.AUTOMATIC_IDLE
+            default:
+                states.d = States.MANUAL
+        }
+    }
+}

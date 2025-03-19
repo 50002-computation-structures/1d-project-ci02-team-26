@@ -1,0 +1,45 @@
+testbench multiplier_tb {
+    
+    multiplier dut()
+
+    test myTest {
+        // Init
+        dut.a = 32d0
+        dut.b = 32d0
+        $tick() // capture initial state
+
+        // Case 1
+        dut.a = 32d10
+        dut.b = 32d5
+        $tick()
+        $assert(dut.mul == 32d50)
+        
+        // Case 2
+        // Highest possible positive integer: 0x7FFFFFFF or 2147483647
+        dut.a = 32d1073741823
+        dut.b = 32d2
+        $tick()
+        $assert(dut.mul == 32d2147483646)
+        
+        // Case 3
+        // Overflow of the last sign bit
+        dut.a = 32d1073741823
+        dut.b = 32d3
+        $tick()
+        $assert(dut.mul == 32hbffffffd)
+        
+        // Case 4
+        // Multiply 10 by -1
+        dut.a = 32d10
+        dut.b = 32hffffffff
+        $tick()
+        $assert(dut.mul == 32hfffffff6)
+        
+        // Case 4
+        // Multiply by 0
+        dut.a = 32hdeadbeef
+        dut.b = 32h0
+        $tick()
+        $assert(dut.mul == 32h0)
+    }
+}

@@ -1,0 +1,87 @@
+testbench shifter_tb {
+    
+    shifter dut()
+
+    test myTest {
+        // Init
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 5b00000
+        dut.alufn = 6b00000
+        $tick() // capture initial state
+
+        // Case 1: L shift by 1
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 1
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b00000001, 8b11100000})
+        
+        // Case 2: L shift by 5
+        dut.a = c{8b0, 8b0, 8b00000001, 8b11100000}
+        dut.b = 5
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b00111100, 8b0})
+        
+        // Case 3: L shift by 24
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 24
+        $tick()
+        $assert(dut.shift == c{8b11110000, 8b0, 8b0, 8b0})
+        
+        // Case 4: L shift by 26
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 26
+        $tick()
+        $assert(dut.shift == c{8b11000000, 8b0, 8b0, 8b0})
+        
+        
+        // Case 5: R shift by 1
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 1
+        dut.alufn = 6b000001
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b0, 8b01111000})
+        
+        // Case 6: R shift by 24
+        dut.a = c{8b11110000, 8b0, 8b0, 8b0}
+        dut.b = 24
+        dut.alufn = 6b000001
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b0, 8b11110000})
+        
+        // Case 6: R shift by 26
+        dut.a = c{8b00001111, 8b0, 8b0, 8b0}
+        dut.b = 26
+        dut.alufn = 6b000001
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b0, 8b00000011})
+        
+        
+        // Case 7: RA shift by 1 (positive)
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 1
+        dut.alufn = 6b000011
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b0, 8b01111000})
+        
+        // Case 8: RA shift by 1 (negative)
+        dut.a = c{8b10000000, 8b0, 8b0, 8b11110000}
+        dut.b = 1
+        dut.alufn = 6b000011
+        $tick()
+        $assert(dut.shift == c{8b11000000, 8b0, 8b0, 8b01111000})
+        
+        // Case 8: RA shift by 24 (negative)
+        dut.a = c{8b10000000, 8b0, 8b0, 8b11110000}
+        dut.b = 24
+        dut.alufn = 6b000011
+        $tick()
+        $assert(dut.shift == c{8hff, 8hff, 8hff, 8b10000000})
+        
+        // Case 9: RA shift by 32 (negative)
+        dut.a = c{8b10000000, 8b0, 8b0, 8b11110000}
+        dut.b = 31
+        dut.alufn = 6b000011
+        $tick()
+        $assert(dut.shift == c{8hff, 8hff, 8hff, 8hff})
+    }
+}

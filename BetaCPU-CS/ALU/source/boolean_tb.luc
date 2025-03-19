@@ -1,0 +1,43 @@
+testbench boolean_tb {
+    
+    boolean dut(#SIZE(8)) // Only use an 8-bit boolean because it's easier lol
+
+    test myTest {
+        // Init
+        dut.a = 0
+        dut.b = 0
+        dut.alufn = 0
+        $tick() // capture initial state
+
+        // Test start
+        
+        // Case 1: AND gate, ALUFN=1000
+        dut.alufn=6bxx1000
+        dut.a=8b11110000
+        dut.b=8b00010000
+        $tick()
+        $assert(dut.bool == 8b00010000)
+        
+        // Case 2: OR gate, ALUFN=1110
+        dut.alufn=6bxx1110
+        dut.a=8b11110000
+        dut.b=8b00010000
+        $tick()
+        $assert(dut.bool == 8b11110000)
+        
+        // Case 3: XOR gate, ALUFN=0110
+        dut.alufn=6bxx0110
+        dut.a=8b11110000
+        dut.b=8b00010000
+        $tick()
+        $assert(dut.bool == 8b11100000)
+        
+        // Case 4: "A" operation which only clones input A, and input B does nothing, ALUFN=1010
+        dut.alufn=6bxx1010
+        dut.a=8b11110000
+        dut.b=8b00010000
+        $tick()
+        $print(dut.bool)
+        $assert(dut.bool == 8b11110000)
+    }
+}

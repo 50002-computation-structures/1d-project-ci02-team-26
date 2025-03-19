@@ -1,0 +1,89 @@
+module alu (
+    input a[32],
+    input b[32],
+    input alufn[6], // See https://natalieagus.github.io/50002/assets/contentimage/lab3/21.png for the full list
+    output out[32],
+    output z,
+    output v,
+    output n
+) {
+    
+    adder adder()
+    compare compare()
+    multiplier multiplier()
+    shifter shifter()
+    boolean boolean()
+    
+    // Signal out shortcuts for ease of reading
+    sig s[32] // Adder out
+    sig mul[32]
+    sig bool[32]
+    sig cmp[32]
+    sig shift[32]
+    sig mux2_out[32]
+    
+    // Final multiplexers
+    mux_2 mux_2[32]
+    mux_4 mux_4[32]
+    
+    always {
+        
+        // ======================= Adder Logic =======================
+        adder.a = a;
+        adder.b = b;
+        adder.alufn_signal = alufn;
+        
+        z = adder.z;
+        v = adder.v;
+        n = adder.n;
+        s = adder.out;
+        
+        // ======================= Multiplier Logic =======================
+        
+        multiplier.a = a
+        multiplier.b = b
+        mul = multiplier.mul
+        
+        // ======================= Boolean Logic =======================
+        
+        boolean.a = a
+        boolean.b = b
+        boolean.alufn = alufn
+        bool = boolean.bool
+        
+        // ======================= Shifter Logic =======================
+        
+        shifter.a = a
+        shifter.b = b[4:0]
+        shifter.alufn = alufn
+        shift = shifter.shift
+        
+        // ======================= Comparator Logic =======================
+        compare.z = adder.z
+        compare.v = adder.v
+        compare.n = adder.n
+        compare.alufn = alufn
+        cmp = c{31x{b0}, compare.cmp}
+        
+        
+        
+        // ======================= Multiplexer =======================
+        mux_2.s0 = 32x{alufn[1]}
+        repeat(i, 32) {
+            mux_2.in[i][0] = s[i]
+            mux_2.in[i][1] = mul[i]
+        }
+        mux2_out = mux_2.out
+        
+        mux_4.s0 = 32x{alufn[4]}
+        mux_4.s1 = 32x{alufn[5]}
+        repeat(i, 32) {
+            mux_4.in[i][0] = mux2_out[i]
+            mux_4.in[i][1] = bool[i]
+            mux_4.in[i][2] = shift[i]
+            mux_4.in[i][3] = cmp[i]
+        }
+        
+        out = mux_4.out // FINAL ALU OUT!!
+    }
+}
