@@ -1,5 +1,13 @@
 testbench alu_tb {
     alu dut()
+    
+    fun quest_test() {
+        dut.alufn = 6b011001
+        dut.a = 32h000ff000
+        dut.b = 32h0000ffff
+        $tick()
+        $print("%h", dut.out)
+    }
 
     fun adder_tests() {
         // Zero tests
@@ -231,6 +239,6 @@ testbench alu_tb {
         $bool_tests()
         $shifter_tests()
         $cmp_tests()
-        
+        $quest_test()
     }
 }

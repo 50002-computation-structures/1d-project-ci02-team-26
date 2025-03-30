@@ -190,6 +190,12 @@
                     "type": "DiskFile",
                     "path": "source/rom.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/adder_tb.luc"
+                }
             }
         ],
         "constraintFiles": [

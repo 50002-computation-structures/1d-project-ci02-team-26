@@ -1,0 +1,42 @@
+testbench adder_tb {
+    
+    adder dut(#SIZE(16))
+
+    test myTest {
+        dut.a = 16h00
+        dut.b = 16h00
+        dut.alufn_signal = 6b000000
+        $tick() // capture initial state
+
+        // test goes here
+        dut.alufn_signal = 6h01
+        dut.a = 16h0101
+        dut.b = 16h0011
+        $tick()
+        $print("%h z:%d v:%d n:%d", dut.out, dut.z, dut.v, dut.n)
+        
+        dut.alufn_signal = 6h00
+        dut.a = 16h0404
+        dut.b = 16h8000
+        $tick()
+        $print("%h z:%d v:%d n:%d", dut.out, dut.z, dut.v, dut.n)
+        
+        dut.alufn_signal = 6h00
+        dut.a = 16ha234
+        dut.b = 16h8000
+        $tick()
+        $print("%h z:%d v:%d n:%d", dut.out, dut.z, dut.v, dut.n)
+        
+        dut.alufn_signal = 6h00
+        dut.a = 16hffff
+        dut.b = 16h0001
+        $tick()
+        $print("%h z:%d v:%d n:%d", dut.out, dut.z, dut.v, dut.n)
+        
+        dut.alufn_signal = 6h01
+        dut.a = 16hc0ff
+        dut.b = 16heecc
+        $tick()
+        $print("%h z:%d v:%d n:%d", dut.out, dut.z, dut.v, dut.n)
+    }
+}

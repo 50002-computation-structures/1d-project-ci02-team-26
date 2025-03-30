@@ -83,5 +83,12 @@ testbench shifter_tb {
         dut.alufn = 6b000011
         $tick()
         $assert(dut.shift == c{8hff, 8hff, 8hff, 8hff})
+        
+        // Case 10: Left shift with corrupted input B
+        dut.a = c{8b0, 8b0, 8b0, 8b11110000}
+        dut.b = 32hffffff07
+        dut.alufn = 6b00000
+        $tick()
+        $assert(dut.shift == c{8b0, 8b0, 8b01111000, 8b0})
     }
 }
