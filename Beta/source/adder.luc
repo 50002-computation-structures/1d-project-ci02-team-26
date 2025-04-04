@@ -1,0 +1,34 @@
+// Refer to this image for the adder module schematic
+// https://natalieagus.github.io/50002/assets/contentimage/lab3-fpga/2024-50002-COMPACT-ADDER.drawio.png
+// Adder performance is VALIDATED :D
+
+module adder #(
+    SIZE = 32 : SIZE > 1
+)(
+    input a[SIZE],
+    input b[SIZE],
+    input alufn_signal[6], // ALUFN0 controls add or subtract. 0 => S=A+B, 1=> S=A-B. The rest of the bits are used for controlling which ALU
+    output out[SIZE],
+    output z,
+    output v,
+    output n
+) {
+    rca rca(#SIZE(SIZE))
+    sig xb[SIZE] // xb is a modified version of B, which passes through a XOR gate to either become a 2s complement or not
+    
+    always {
+        // Signal inputs
+        xb[SIZE-1:0] = b ^ SIZEx{alufn_signal[0]} // This is a XOR gate that creates a 2s complement version of b depending on ALUFN0
+        rca.a = a
+        rca.b = xb
+        rca.cin = alufn_signal[0] // carry in is tied to Add/Subtract selector as 2s complement requires to invert all bits and then add 1
+        
+        // Signal outputs
+        out = rca.s          // Sum
+        z = ~| rca.s         // Zero flag, just check if all bits are 0
+        v = (a[SIZE-1] & xb[SIZE-1] & ~rca.s[SIZE-1]) | (~a[SIZE-1] & ~xb[SIZE-1] & rca.s[SIZE-1])
+        // ^ Overflow flag, copy from https://natalieagus.github.io/50002/assets/contentimage/lab3-fpga/2024-50002-ADDER.drawio.png
+        // Overflow is designed with 
+        n = rca.s[SIZE-1]    // Negative flag
+    }
+}

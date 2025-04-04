@@ -1,0 +1,90 @@
+module pc_unit (
+    input clk,              // clock
+    input rst,              // reset
+    input slowclk,          // slowclock to advance pc
+    
+    input id[16],           // lower 16 bits of the instruction data taken from the memory, which is specifically meant for SEXT(C)
+                            // aka sign extended C
+    input pcsel[3],         // PCSEL signal which is emitted by the control/IRQ units
+    input reg_data_1[32],   // Data output from Register A, used as input for the JT unit (jump instructions)
+    
+    output pc_4[32],        // PC + 4, which can be propagated into ia[32]
+    output pc_4_sxtc[32],   // PC + 4 + 4*SEXT(C), which is fed into the ALU's ASEL mux
+    output pcsel_out[32],   // for debug only, does not exist in pc_unit
+    output ia[32]           // Instruction Address, which is sent to the Memory Unit's instruction address port. Note that the MSB is the supervisor bit
+) {
+    
+    dff pc[32](#INIT(0),.clk(clk)) // PC Register
+    
+    sig pcsel_out_sig[32]
+    sig pc_4sxtc_32_sig[32] // 
+    sig pc_4sxtc_sig[32]
+    sig pc_4sig[32]
+    sig pc_4raw[32]
+    
+    always {
+        // default connections to silence errors
+        pc.d = pc.q  // This is equivalent to ia
+        pcsel_out_sig = 0
+        pc_4sxtc_sig = 0
+        
+        // increment pc by 4
+        pc_4raw = pc.q + 4
+        pc_4sig = c{pc.q[31], pc_4raw[30:0]} // Preserve supervisor bit!      
+        
+        // TASK 4
+        // shift-and-add pc by 4: shift id by 2 to the left, sign extend it, and add it to PC+4 to get PC + 4 + 4*SEXT(C)
+        pc_4sxtc_32_sig = c{14x{id[15]}, id[15:0], 2b00} + pc_4raw;
+        pc_4sxtc_sig = c{pc.q[31], pc_4sxtc_32_sig[30:0]}; // Preserve supervisor bit!
+        
+        
+        // TASK 1 
+        // PCSEL mux 
+        case (pcsel){
+            // consider all cases of pcsel signals 
+            // for JMP, make sure to compute the supervisor bit properly 
+            // for ILLOP and IRQ handlers, ensure that the supervisor bit is set to 1
+            
+            3b000: // 0 takes PC_4 (PC + 4)
+                pcsel_out_sig = pc_4raw; // TODO: check if this is correct? Looks correct according to the diagram??
+            
+            3b001: // 1 takes PC_4_STXC (PC + 4 + Sign Extended C or external input)
+                pcsel_out_sig = pc_4sxtc_sig; // TODO: this one preserves the supervisor bit, should I???
+            
+            3b010: // 2 is the JT unit (JMP), which alters the MSB of reg_data_1 based on the MSB of the current instruction address
+                pcsel_out_sig = c{pc.q[31] ? reg_data_1[31] : 1b0, reg_data_1[30:2], 2b00};
+                // JMP instructions can preserve or clear the supervisor bit, depending on ra31 (the MSB of address read from the memory unit)
+            
+            3b011: // 3 selects the ILLOP handler address
+                pcsel_out_sig = 32h80000004;
+            
+            3b100: // 4 selects the XAddr (interrupt) handler address
+                pcsel_out_sig = 32h80000008;
+                        
+            default: // just a default case to silence warnings 
+                pcsel_out_sig = pc.q;
+         }
+        // advance the PC only when slowclk is 1 
+        if (slowclk){
+            // set the content of pcreg to be its next value only when slowclk == 1
+            // TODO: Doesn't advancing the PC register involve pulsing the clock?? Isn't the clock pulse already provided?
+        }
+
+        // outside the mux: advance the PC only when slowclk is 1 
+
+        
+        // Task 2
+        // RESET mux 
+        case (rst) {
+            0: pc.d = pcsel_out_sig;
+            1: pc.d = 32h80000000;
+        }
+        
+        
+        // output connections
+        ia = pc.q
+        pc_4 =  pc_4sig
+        pc_4_sxtc = pc_4sxtc_sig
+        pcsel_out = pcsel_out_sig
+    }
+}
