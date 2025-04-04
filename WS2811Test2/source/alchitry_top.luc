@@ -1,0 +1,85 @@
+module alchitry_top (
+    input clk,              // 100MHz clock
+    input rst_n,            // reset button (active low)
+    output led[8],          // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led[3][8],    // LEDs on IO Shield
+    output io_segment[8],   // 7-segment LEDs on IO Shield
+    output io_select[4],    // Digit select on IO Shield
+    input io_button[5],     // 5 buttons on IO Shield
+    input io_dip[3][8],      // DIP switches on IO Shield
+    output data
+) {
+    // Project constants
+    const CLK_FREQ = $is_sim() ? 1000 : 100000000
+    const BUFFER_SIZE = 1024;
+    const COLOR_ENCODING = {24h0000FF, 24hFF0000, 24h00FF00, 24h0} // GREEN (01), BLUE (10), RED (11), OFF (00)
+    const DISPLAY = $reverse({
+        2b10, 2b11, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+        2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+        2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+        2b01, 2b10
+    }) // 50 entries here
+    const PIXEL_COUNT = 10d50 // must correspond to the same size as DISPLAY
+
+    sig rst                 // reset signal
+    sig pixel_address[BUFFER_SIZE]
+
+    .clk(clk) {
+        // The reset conditioner is used to synchronize the reset signal to the FPGA
+        // clock. This ensures the entire FPGA comes out of reset at the same time.
+        reset_conditioner reset_cond
+        
+        button_conditioner clear_button(#CLK_FREQ(CLK_FREQ), .in(io_button[0]))
+        edge_detector clear_button_edge(#RISE(1), #FALL(0), .in(clear_button.out))
+        
+        .rst(rst) {
+            dff driver_update_flag(#INIT(0))
+            ws2811_driver led_driver(#PIXEL_COUNT(PIXEL_COUNT))
+        }
+    }
+    
+    always {
+        reset_cond.in = ~rst_n  // input raw inverted reset signal
+        rst = reset_cond.out    // conditioned reset
+        led = 8h00              // turn LEDs off
+        usb_tx = usb_rx         // loop serial port
+        io_led = 3x{{8h00}}
+        io_segment = 8hff
+        io_select = 4hf
+        
+        // Feedback loop 1: this pixel address comes FROM the driver, which has to be interpreted by the
+        // associated circuitry implementing it
+        pixel_address = led_driver.pixel_address
+        driver_update_flag.d = driver_update_flag.q
+        
+        // Inputs
+        //led_driver.color = 24h00ffff // BBRRGG, resulting in yellow
+        // When update=1, the display will be updated, when update=0, the display will not be updated
+        led_driver.update = driver_update_flag.q 
+        // Feedback loop 2: the color is then specified by the display memory based on the current pixel address the driver is trying
+        // to fetch from. You can process the data in a specific way before handing it to the driver like the commented line below
+        led_driver.color = COLOR_ENCODING[DISPLAY[$resize(pixel_address, $clog2($width(DISPLAY, 0)))]]
+        //led_driver.color = COLOR_ENCODING[DISPLAY[pixel_address]] 
+        led_driver.clear = 0
+        // Driving the clear pin high will result in the driver attempting to clear the display (all unlit)
+        if (clear_button_edge.out) {
+            led_driver.clear = 1
+            driver_update_flag.d = ~driver_update_flag.q
+        }
+        
+        // Note regarding the logic above: the clear signal is initialised to 0 in the beginning, however the driver
+        // itself does a clear regardless upon power up. The driver update flag is by default 0. 
+        // This process works like this: when the clear button is pressed once, clear gets driven high and update goes high
+        // as well. The clear will immediately go low after the button press and the update flag stays high.
+        // 
+        
+        // Outputs
+        data = ~led_driver.data
+        io_led[0][0] = led_driver.next_pixel
+        io_led[0][1] = led_driver.reset // Interestingly, this one blinks when writing data
+        io_led[0][2] = led_driver.done // Interestingly, this one never shows anything!
+        io_led[1] = pixel_address // Directly show the current pixel address on IO_LED[1]
+    }
+}
