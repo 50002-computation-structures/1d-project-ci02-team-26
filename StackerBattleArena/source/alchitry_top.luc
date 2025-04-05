@@ -8,7 +8,8 @@ module alchitry_top (
     output io_segment[8],   // 7-segment LEDs on IO Shield
     output io_select[4],    // Digit select on IO Shield
     input io_button[5],     // 5 buttons on IO Shield
-    input io_dip[3][8]      // DIP switches on IO Shield
+    input io_dip[3][8],     // DIP switches on IO Shield
+    output data             // WS2811 data output
 ) {
 
     sig rst                 // reset signal
@@ -19,6 +20,11 @@ module alchitry_top (
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
+        
+        .rst(rst) {
+            ws2811_driver driver(#PIXEL_COUNT(105))
+            regfile_memory regfile()
+        }
     }
     
     always {
@@ -28,8 +34,6 @@ module alchitry_top (
         led = 8h00              // turn LEDs off
         
         usb_tx = usb_rx         // loop serial port
-        
-        
         
         // ALU
         alu.a = 0
@@ -41,5 +45,19 @@ module alchitry_top (
         io_select = 4hf
         
         io_led[0] = alu.out[7:0]
+        
+        // LED driver
+        driver.update = 0
+        driver.clear = 0
+        driver.color = 0
+        data = driver.data
+        
+        // Regfile
+        regfile.wa = 0
+        regfile.wd = 0
+        regfile.we = 0
+        regfile.ra1 = 0
+        regfile.ra2 = 0
+        regfile.rxc = 0
     }
 }

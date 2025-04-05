@@ -1,4 +1,7 @@
-
+/*
+    regfile_memory.luc
+    This is our custom RegFile made for the game, designed with multiple direct outputs for the graphics driver
+*/
 
 module regfile_memory (
     input clk,

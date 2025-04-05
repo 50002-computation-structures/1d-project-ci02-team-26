@@ -88,6 +88,12 @@
                     "type": "DiskFile",
                     "path": "source/regfile_memory.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/ws2811_driver.luc"
+                }
             }
         ],
         "constraintFiles": [
@@ -99,8 +105,8 @@
             },
             {
                 "file": {
-                    "type": "Component",
-                    "path": "Constraints/io_v1_pulldown.acf"
+                    "type": "DiskFile",
+                    "path": "constraint/io_v1_pulldown.acf"
                 }
             }
         ],
