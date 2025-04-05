@@ -1,6 +1,21 @@
 /*
     regfile_memory.luc
     This is our custom RegFile made for the game, designed with multiple direct outputs for the graphics driver
+    
+    All the registers here are reserved for special roles, such as:
+    - R0: current row height which determines which row the player is at now
+    - R1: current row's blocks in binary form. Only lower 8 bits are used
+    - R2: scratch register
+    - R3: current block oscillation direction, 0 for left, 1 for right, single bit boolean only
+    - R4: scratch reg
+    - R5: scratch reg
+    - R6: previous row's blocks in binary form, for ease of comparison. Only lower 8 bits are used
+    - R7: comparison output of current row and previous row in boolean form. Only lower 8 bits are used
+    
+    - RX0 / R8: Row 1, 2, 3 and 4 bitmap, which encodes which bits of row 1 to 4 are occupied, occupied=1, unoccupied=0
+    - RX1 / R9: Row 5, 6, 7 and 8 bitmap, which encodes which bits of row 5 to 8 are occupied, occupied=1, unoccupied=0
+    - RX2 / R10: Row 9, 10, 11 and 12 bitmap, which encodes which bits of row 9 to 12 are occupied, occupied=1, unoccupied=0
+    - RX3 / R11: Row 13, 14, and 15 bitmap, which encodes which bits of row 13 to 15 are occupied, occupied=1, unoccupied=0
 */
 
 module regfile_memory (
@@ -13,9 +28,12 @@ module regfile_memory (
     input wa[5],
     input wd[32],
     input rxc,        // special input to wipe all display registers
-    input we
+    input we,
+    output rx[4][32], // display buffer registers
+    output r0[32],    // current row height
+    output r1[32],    // current row's blocks
+    output r3[32]     // current block oscillation direction
 ) {
-    
     // 32x 32-bit registers
     dff registers[32][32](#INIT(32x{{32h0}}), .clk(clk), .rst(rst))
     
@@ -23,18 +41,21 @@ module regfile_memory (
         // default connections to silence errors
         registers.d = registers.q
         
-        // TASK 7 
+        // ======================== Addressable read ports ========================
         // implement two output read ports
         // read ports are defined by rd1, rd2 outputs and ra1, ra2 inputs
         rd1 = registers.q[ra1] // note that rd1 port is wired directly to PCSEL for JMP instructions
         rd2 = registers.q[ra2]
         
+        // ======================== Addressable write ports ========================
         // implement one write port 
         // check if(write_en) and that we are not writing to R31 
         if (we) {
             // Write enabled on port with write address
             registers.d[wa] = wd
         }
+        
+        // ======================== Special registers ========================
         
         // Register 31 is a special register that always reads 0
         if (ra1 == 5b11111)
@@ -46,10 +67,23 @@ module regfile_memory (
             rd2 = 32h00000000
         }
         
-        // Implementation of asynchronous reset
+        // Special direct output registers
+        r0 = registers.q[0]
+        r1 = registers.q[1]
+        r3 = registers.q[3]
+        
+        // ======================== Display Buffer ========================
+        
+        // Direct display buffer output for RX registers
+        repeat (i, 4) // RX0, RX1, RX2, RX3 corresponds to R8 .. R11
+        {
+            rx[i] = registers.q[i+8]
+        }
+        
+        // Implementation of asynchronous reset for display buffer
         if (rxc)
         {
-            repeat (i, 29, 3) // 29, 30, 31
+            repeat (i, 4, 8) // 8,9,10,11 which are display registers
             {
                 registers.d[i] = 0
             }

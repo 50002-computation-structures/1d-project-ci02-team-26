@@ -1,0 +1,41 @@
+module regfile_unit (
+    input clk,  // clock
+    input rst,  // reset
+    input ra1[5],
+    input ra2[5],
+    output rd1[32],
+    output rd2[32],
+    input wa[5],
+    input wd[32],
+    input rxc,        // special input to wipe all display registers
+    input we,
+    output rx[4][32], // display buffer registers
+    output r0[32],    // current row height
+    output r1[32],    // current row's blocks
+    output r3[32],     // current block oscillation direction
+    output shift_ok[4] // special 4-bit indicator to indicate at what point are the squares ok to shift on the screen
+) {
+    
+    regfile_memory regfile(.clk(clk), .rst(rst))
+    
+    always {
+        // connections to regfile memory
+        regfile.ra1 = ra1
+        regfile.ra2 = ra2
+        regfile.wa = wa
+        regfile.wd = wd
+        regfile.we = we
+        regfile.rxc = rxc
+        
+        // output connections
+        rd1 = regfile.rd1 
+        rd2 = regfile.rd2
+        rx = regfile.rx
+        r0 = regfile.r0
+        r1 = regfile.r1
+        r3 = regfile.r3
+        
+        // special 4-bit indicator for shifting, in the order OKL, OKR, NOKL, NOKR
+        shift_ok = c{(~regfile.r1[7] & ~regfile.r3[0]), (~regfile.r1[0] & regfile.r3[0]), (regfile.r1[7] & ~regfile.r3[0]), (regfile.r1[0] & regfile.r3[0])}
+    }
+}

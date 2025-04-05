@@ -23,7 +23,7 @@ module alchitry_top (
         
         .rst(rst) {
             ws2811_driver driver(#PIXEL_COUNT(105))
-            regfile_memory regfile()
+            regfile_unit regfile()
         }
     }
     

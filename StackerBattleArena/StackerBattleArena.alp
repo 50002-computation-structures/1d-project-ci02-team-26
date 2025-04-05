@@ -94,6 +94,12 @@
                     "type": "DiskFile",
                     "path": "source/ws2811_driver.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/regfile_unit.luc"
+                }
             }
         ],
         "constraintFiles": [
