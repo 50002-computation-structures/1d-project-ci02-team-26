@@ -1,9 +1,9 @@
 module regfile_unit (
     input clk,  // clock
     input rst,  // reset
-    input ra[5],
-    input rb[5], 
-    input rc[5],
+    input ra[5],    // id[20:16]
+    input rb[5],    // id[15:11]
+    input rc[5],    // id[25:21]
     input wasel,
     input ra2sel,
     input werf,
@@ -22,33 +22,39 @@ module regfile_unit (
     always {
         // default connections to silence errors
         mwd = 0
-        //ra2sel_out = 0
-        //wasel_out = 0
+        z = 0
+        ra2sel_out = 0
+        wasel_out = 0
         
         //*****REGFILE*******//
         // do not write anything to the regfile unless PC advances 
         regfile.we = 0
         if (slowclk) {
-            regfile.we = werf // Connect write enable to WERF
+            regfile.we = werf
         }
         
         // TASK 6
         // RA2SEL mux
-        case(ra2sel){
-            // implement the RA2SEL mux logic here 
-            0: ra2sel_out = rb;
-            1: ra2sel_out = rc;
-            default: ra2sel_out = rb; // default case to silence warnings 
-        }
-    
-        // WASEL mux 
-        case(wasel){
-            // implement the WASEL mux logic here 
-            0: wasel_out = rc;
-            1: wasel_out = 5b11110; // Reg[XP]
-            default: wasel_out = rc; // default case to silence warnings 
+        case (ra2sel){
+            
+            b0:
+                ra2sel_out = rb
+            b1:
+                ra2sel_out = rc
+            default:
+                ra2sel_out = rb
         }
         
+        // WASEL mux 
+        case (wasel){
+            b0:
+                wasel_out = rc
+            b1:
+                wasel_out = b11110
+            default:
+                wasel_out = rc
+            
+        }
         
         // connections to regfile memory
         regfile.ra2 = ra2sel_out
@@ -57,8 +63,8 @@ module regfile_unit (
         regfile.wd = wdsel_out
         
         // TASK 8
-        // compute z
-        z = ~|regfile.rd1;
+        // compute z 
+        z = ~|regfile.rd1
         
         // TASK 9
         // connect output of RD2 port of regfile_memory as mwd
@@ -67,5 +73,7 @@ module regfile_unit (
         // output connections
         rd1 = regfile.rd1 
         rd2 = regfile.rd2
+        
+        
     }
 }

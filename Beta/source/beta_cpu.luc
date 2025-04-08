@@ -59,31 +59,84 @@ module beta_cpu (
         
         // Task 12
         //***** CONTROL unit ******// 
-        
+        control_system.irq = irq
+        control_system.ia31 = pc_system.ia[31]
+        control_system.opcode = instruction[31:26]
+        control_system.z = regfile_system.z
+        control_system.slowclk = slowclk
         
         //***** PC unit ******// 
-        
+        pc_system.slowclk = slowclk
+        pc_system.reg_data_1 = regfile_system.rd1
+        pc_system.pcsel = control_system.pcsel
+        pc_system.id = instruction[15:0]
         
         //***** REGFILE unit *****//
+        regfile_system.slowclk = slowclk
+        regfile_system.ra2sel = control_system.ra2sel
+        regfile_system.wasel = control_system.wasel
+        regfile_system.werf = control_system.werf
+        regfile_system.ra = instruction[20:16]
+        regfile_system.rb = instruction[15:11]
+        regfile_system.rc = instruction[25:21]
         
         
         //****** ALU + WDSEL unit *******//
+        alu_system.alufn = control_system.alufn
+        
         // ASEL mux
+        case(control_system.asel){
+            b0:
+            asel_out = regfile_system.rd1
+            
+            b1:
+            asel_out = c{0, pc_system.pc_4_sxtc[30:0]}
+            
+            default:
+            asel_out = regfile_system.rd1
+        }
         
         // BSEL mux
-        
+        case(control_system.bsel){
+            b0:
+            bsel_out = regfile_system.rd2
+            
+            b1:
+            bsel_out = c{16x{instruction[15]},instruction[15:0]}
+            
+            default:
+            bsel_out = regfile_system.rd2
+        }
         // WDSEL mux
+        case(control_system.wdsel){
+            b00:
+            wdsel_out = pc_system.pc_4
+            b01:
+            wdsel_out = alu_system.out
+            b10:
+            wdsel_out = mem_data_input
+            
+            default:
+            wdsel_out = alu_system.out
+        }
         
         // connect asel and bsel to alu, wdsel to regfile
-        
-        
         // remaining beta datapath connections
         // connect alu_system with asel_out and bsel_out
         // connect regfile_system with wdsel_out 
         // connect mem_data_address with the output of the alu
+        alu_system.a = asel_out
+        alu_system.b = bsel_out
+        regfile_system.wdsel_out = wdsel_out
+        
+
+        mem_data_address = alu_system.out
         // connect mem_data_output with regfile_system 
+        mem_data_output = regfile_system.mwd
         // connect wr sig with control_system 
+        wr = control_system.wr
         // connect ia with pc system
+        ia = pc_system.ia
         
         // debug signals
         debug[0][15:0] = pc_system.pcsel_out[15:0]

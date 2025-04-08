@@ -10,34 +10,28 @@ module regfile_memory (
     input we
 ) {
     
-    // 32x 32-bit registers
     dff registers[32][32](#INIT(32x{{32h0}}), .clk(clk), .rst(rst))
     
     always {
         // default connections to silence errors
-        registers.d = registers.q
         
+        registers.d = registers.q
+        rd1 = 0
+        rd2 = 0 
         // TASK 7 
-        // implement two output read ports
-        // read ports are defined by rd1, rd2 outputs and ra1, ra2 inputs
-        rd1 = registers.q[ra1] // note that rd1 port is wired directly to PCSEL for JMP instructions
+        // implement two output read ports   
+        rd1 = registers.q[ra1]
         rd2 = registers.q[ra2]
+        
         
         // implement one write port 
         // check if(write_en) and that we are not writing to R31 
-        if (we) {
-            // Write enabled on port with write address
+        if (wa != b11111 && we){
             registers.d[wa] = wd
         }
+        // always give out 0 if we are reading R31 (from either RA ports)
+        if (ra1 == b11111) rd1 = 32b0
+        if (ra2 == b11111) rd2 = 32b0
         
-        // Register 31 is a special register that always reads 0
-        if (ra1 == 5b11111)
-        {
-            rd1 = 32h00000000
-        }
-        if (ra2 == 5b11111)
-        {
-            rd2 = 32h00000000
-        }
     }
 }
