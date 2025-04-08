@@ -1,5 +1,5 @@
 module alchitry_top (
-    input clk,              // 100MHz clock
+    input clk,              // 25MHz clock
     input rst_n,            // reset button (active low)
     output led[8],          // 8 user controllable LEDs
     input usb_rx,            // USB->Serial input
@@ -30,7 +30,6 @@ module alchitry_top (
         
         usb_tx = usb_rx          // loop serial port
         
-
         io_led = beta_manual.io_led
         io_segment = beta_manual.io_segment
         io_select = beta_manual.io_select
