@@ -36,6 +36,9 @@ module regfile_unit (
         r3 = regfile.r3
         
         // special 4-bit indicator for shifting, in the order OKL, OKR, NOKL, NOKR
-        shift_ok = c{(~regfile.r1[7] & ~regfile.r3[0]), (~regfile.r1[0] & regfile.r3[0]), (regfile.r1[7] & ~regfile.r3[0]), (regfile.r1[0] & regfile.r3[0])}
+        shift_ok = c{(~regfile.r1[7] & ~regfile.r3[0]), 
+                     (~regfile.r1[0] & regfile.r3[0]), 
+                     (regfile.r1[7] & ~regfile.r3[0]), 
+                     (regfile.r1[0] & regfile.r3[0])}
     }
 }

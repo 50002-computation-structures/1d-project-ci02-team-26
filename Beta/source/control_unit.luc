@@ -1,143 +1,159 @@
-module control_unit (
+module control_unit(
     input clk,
-    input irq, 
+    input irq,
     input z,
-    input rst,    
+    input rst,
     input opcode[6],
     input slowclk,
     input ia31,
-    output pcsel[3], 
+    output pcsel[3],
     output wasel,
     output asel,
     output ra2sel,
     output bsel,
     output alufn[6],
-    output wdsel[2], 
+    output wdsel[2],
     output werf,
-    output wr
-  ) {
-  
-  const CU_ROM = { 
-    b01110000000000010,
-    b00000011000110110,    //SRAC
-    b00000011000010110,    //SHRC
-    b00000011000000110,    //SHLC
-    b01110000000000010,    //
-    b00000010101100110,    //XORC
-    b00000010111100110,    //ORC
-    b00000010110000110,    //ANDC
-    b01110000000000010,    //
-    b00000011101110110,    //CMPLEC
-    b00000011101010110,    //CMPLTC
-    b00000011100110110,    //CMPEQC
-    b01110000000000010,    //
-    b01110000000000010,    //
-    b00000010000010110,    //SUBC
-    b00000010000000110,    //ADDC
-    b01110000000000010,    //
-    b00000001000110110,    //SRA
-    b00000001000010110,    //SHR
-    b00000001000000110,    //SHL
-    b01110000000000010,    //
-    b00000000101100110,    //XOR
-    b00000000111100110,    //OR
-    b00000000110000110,    //AND
-    b01110000000000010,    //
-    b00000001101110110,    //CMPLE
-    b00000001101010110,    //CMPLT
-    b00000001100110110,    //CMPEQ
-    b01110000000000010,    //
-    b01110000000000010,    //
-    b00000000000010110,    //SUB
-    b00000000000000110,    //ADD
-    b00001000110101010,    //LDR
-    b00001000110100010,    //BNE
-    b00001000110100010,    //BEQ
-    b01110000000000010,    //
-    b01001000110100010,    //JMP
-    b01110000000000010,    //
-    b00000110000000001,    //ST
-    b00000010000001010,    //LD
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010,
-    b01110000000000010, // b011 --> illegal op
-    b01110000000000010    // index 0 
-  };
-    
-  dff irq_sampler(#INIT(0), .clk(clk));
+    output wr)
+{
 
-  always {
-  
-    // sample interrupt at the beginning of each cycle
-    if (~irq_sampler.q){
-      // sample only when interrupt bit is 0 (clear) 
-      irq_sampler.d = irq;
-    }
-  
-    // control signal basic output connections
-    pcsel = CU_ROM[opcode][16:14]; 
-    wasel = CU_ROM[opcode][13]; 
-    asel = CU_ROM[opcode][12]; 
-    ra2sel = CU_ROM[opcode][11]; 
-    bsel = CU_ROM[opcode][10]; 
-    alufn = CU_ROM[opcode][9:4]; 
-    wdsel = CU_ROM[opcode][3:2];  
-    werf= CU_ROM[opcode][1];
-    wr = CU_ROM[opcode][0]; 
-    
-    // Task 10
-    // PCSEL for BNE/BEQ
-        if (opcode == b011101 && z == 1){    //BEQ
-            pcsel = b001
-            
+    // This ROM provides the appropriate signals for every single instruction, turning opcodes into signals routed
+    // to the rest of the CPU
+    const CU_ROM = {
+        b01110000000000010,
+        b00000011000110110, // SRAC
+        b00000011000010110, // SHRC
+        b00000011000000110, // SHLC
+        b01110000000000010, //
+        b00000010101100110, // XORC
+        b00000010111100110, // ORC
+        b00000010110000110, // ANDC
+        b01110000000000010, //
+        b00000011101110110, // CMPLEC
+        b00000011101010110, // CMPLTC
+        b00000011100110110, // CMPEQC
+        b01110000000000010, //
+        b01110000000000010, //
+        b00000010000010110, // SUBC
+        b00000010000000110, // ADDC
+        b01110000000000010, //
+        b00000001000110110, // SRA
+        b00000001000010110, // SHR
+        b00000001000000110, // SHL
+        b01110000000000010, //
+        b00000000101100110, // XOR
+        b00000000111100110, // OR
+        b00000000110000110, // AND
+        b01110000000000010, //
+        b00000001101110110, // CMPLE
+        b00000001101010110, // CMPLT
+        b00000001100110110, // CMPEQ
+        b01110000000000010, //
+        b01110000000000010, //
+        b00000000000010110, // SUB
+        b00000000000000110, // ADD
+        b00001000110101010, // LDR
+        b00001000110100010, // BNE
+        b00001000110100010, // BEQ
+        b01110000000000010, //
+        b01001000110100010, // JMP
+        b01110000000000010, //
+        b00000110000000001, // ST
+        b00000010000001010, // LD
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010,
+        b01110000000000010, // b011 --> illegal op
+        b01110000000000010  // index 0
+    };
+
+    dff irq_sampler(#INIT(0), .clk(clk));
+
+    always
+    {
+
+        // sample interrupt at the beginning of each cycle
+        if (~irq_sampler.q)
+        {
+            // sample only when interrupt bit is 0 (clear)
+            irq_sampler.d = irq;
         }
-        else if (opcode == b011110 && z == 0){    // BNE
-            pcsel = b001
-            
+
+        // control signal basic output connections
+        pcsel = CU_ROM[opcode][16:14];
+        wasel = CU_ROM[opcode][13];
+        asel = CU_ROM[opcode][12];
+        ra2sel = CU_ROM[opcode][11];
+        bsel = CU_ROM[opcode][10];
+        alufn = CU_ROM[opcode][9:4];
+        wdsel = CU_ROM[opcode][3:2];
+        werf = CU_ROM[opcode][1];
+        wr = CU_ROM[opcode][0];
+
+        // Task 10
+        // PCSEL for BNE/BEQ
+        if (opcode == b011101) // BEQ
+        {
+            if (z)
+            {
+                pcsel = b001
+            }
+            else
+            {
+                pcsel = b000
+            }
         }
-        
-        
-    // Task 11
-    // IRQ handling
-    // IRQ can happen only in user mode (ia31 is 0)
-    // If IRQ happens during kernel mode, it will not be serviced until we return to user mode
-        if (irq_sampler.q & ~ia31 & slowclk){
+        else if (opcode == b011110) // BNE
+        {
+            if (z)
+            {
+                pcsel = b000
+            }
+            else
+            {
+                pcsel = b001
+            }
+        }
+
+        // Task 11
+        // IRQ handling
+        // IRQ can happen only in user mode (ia31 is 0)
+        // If IRQ happens during kernel mode, it will not be serviced until we return to user mode
+        if (irq_sampler.q & ~ia31 & slowclk)
+        {
             pcsel = b100
             wr = 0
             werf = 1
             wasel = 1
             wdsel = b00
-            
+
             // clear interrupt bit
             irq_sampler.d = 0
-            
         }
-        
-    
-    // force wr = 0 when reset == 1 
-    if (rst){
-      wr = 0;
-    }
 
-  }
+        // force wr = 0 when reset == 1
+        if (rst)
+        {
+            wr = 0;
+        }
+    }
 }

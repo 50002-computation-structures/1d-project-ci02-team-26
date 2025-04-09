@@ -1,0 +1,23 @@
+module clocks (
+    input clk,  // master clock from the FPGA itself
+    input rst,
+    input r0[32],
+    output clk_game,
+    output clk_oscillate
+) {
+    .clk(clk) {
+        .rst(rst) {
+            dff game_clock[19](#INIT(0))      // clock used to refresh the display, optimally 200Hz
+            dff oscillate_clock[26](#INIT(0)) // clock used to oscillate the blocks. 100MHz / 2^26 gives 1.5Hz
+        }
+    }
+    
+    always {
+        game_clock.d = clk
+        oscillate_clock.d = clk
+        
+        clk_game = game_clock.q[18]
+        // 25 - r0 to obtain the correct oscillation frequency of the blocks based on row height
+        clk_oscillate = oscillate_clock.q[25 - r0] 
+    }
+}

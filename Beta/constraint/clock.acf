@@ -1,0 +1,3 @@
+STANDARD(LVCMOS33) {
+    pin clk2 CLOCK FREQUENCY(25MHz)
+}

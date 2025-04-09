@@ -8,7 +8,12 @@ module beta_manual_tester#(
     output io_segment [8],      // 7-segment LEDs on IO Shield
     output io_select [4],      // Digit select on IO Shield
     input io_button [5],    // 5 buttons on IO Shield
-    input io_dip [3][8]     // DIP switches on IO Shield
+    input io_dip [3][8],     // DIP switches on IO Shield
+    
+    // Serial port
+    output new_tx,     // new TX flag
+    output tx_data[8], // TX data
+    input tx_busy      // TX is busy flag
 ) {
     
     // helper signals
@@ -35,12 +40,23 @@ module beta_manual_tester#(
     
     // DISPLAY (for easy debugging)
     multi_seven_seg seg(.clk(clk),.rst(rst), #DIV($is_sim() ? 5 : 16)) // put div 5 for sim
+        
+    // serial port debugger
+    enum States {IDLE, TRANSMIT}
+    const BUFFER_LEN = 120
+    bin_to_hex_ascii bin2hex()
+    
+    .clk(clk) {
+	        .rst(rst) {
+	            dff state[$width(States)]
+	        }
+	        dff count[$clog2(BUFFER_LEN)](#INIT(0)) // buffer counter
+	    }
     
     always {
         io_led = 3x{{h00}}       // turn all LED off at first
         io_segment = 8hff // connect segments to the driver
         io_select = 4hf // connect digit select to the driver
-        
         
         led = c{3b0, io_button}  // connect buttons to LEDs
         
@@ -67,7 +83,6 @@ module beta_manual_tester#(
         if (io_dip[2][6]){ // want faster clock
             next = (fastclock_edge.out & io_dip[2][7]) | next_button_edge.out
         }
-        
         
         motherboard.slowclk = next
         
@@ -146,5 +161,149 @@ module beta_manual_tester#(
                 io_led[1:0] = {motherboard.output_buffer[15:8], motherboard.output_buffer[7:0]}
                 seg.values = {motherboard.output_buffer[15:12], motherboard.output_buffer[11:8], motherboard.output_buffer[7:4],motherboard.output_buffer[3:0]} 
         }
+        
+        // serial debugger
+        new_tx = 0 // default to 0
+        bin2hex.bin = 0
+        
+        // Leave blank entry for space character
+        case (count.q) {
+            0: tx_data = "i"
+            1: tx_data = "d"
+            2: tx_data = ":"
+            
+            4: bin2hex.bin = motherboard.id[31:28]; tx_data = bin2hex.out;
+            5: bin2hex.bin = motherboard.id[27:24]; tx_data = bin2hex.out;
+            6: bin2hex.bin = motherboard.id[23:20]; tx_data = bin2hex.out;
+            7: bin2hex.bin = motherboard.id[19:16]; tx_data = bin2hex.out;
+            8: bin2hex.bin = motherboard.id[15:12]; tx_data = bin2hex.out;
+            9: bin2hex.bin = motherboard.id[11:8]; tx_data = bin2hex.out;
+            10: bin2hex.bin = motherboard.id[7:4]; tx_data = bin2hex.out;
+            11: bin2hex.bin = motherboard.id[3:0]; tx_data = bin2hex.out;
+            12: tx_data = "\n"
+            13: tx_data = "i"
+            14: tx_data = "a"
+            15: tx_data = ":"
+            
+            17: bin2hex.bin = motherboard.ia[31:28]; tx_data = bin2hex.out;
+            18: bin2hex.bin = motherboard.ia[27:24]; tx_data = bin2hex.out;
+            19: bin2hex.bin = motherboard.ia[23:20]; tx_data = bin2hex.out;
+            20: bin2hex.bin = motherboard.ia[19:16]; tx_data = bin2hex.out;
+            21: bin2hex.bin = motherboard.ia[15:12]; tx_data = bin2hex.out;
+            22: bin2hex.bin = motherboard.ia[11:8]; tx_data = bin2hex.out;
+            24: bin2hex.bin = motherboard.ia[7:4]; tx_data = bin2hex.out;
+            25: bin2hex.bin = motherboard.ia[3:0]; tx_data = bin2hex.out;
+            26: tx_data = "\n"
+            27: tx_data = "m"
+            28: tx_data = "a"
+            29: tx_data = ":"
+            
+            31: bin2hex.bin = motherboard.ma[31:28]; tx_data = bin2hex.out;
+            32: bin2hex.bin = motherboard.ma[27:24]; tx_data = bin2hex.out;
+            33: bin2hex.bin = motherboard.ma[23:20]; tx_data = bin2hex.out;
+            34: bin2hex.bin = motherboard.ma[19:16]; tx_data = bin2hex.out;
+            35: bin2hex.bin = motherboard.ma[15:12]; tx_data = bin2hex.out;
+            36: bin2hex.bin = motherboard.ma[11:8]; tx_data = bin2hex.out;
+            37: bin2hex.bin = motherboard.ma[7:4]; tx_data = bin2hex.out;
+            38: bin2hex.bin = motherboard.ma[3:0]; tx_data = bin2hex.out;
+            39: tx_data = "\n"
+            40: tx_data = "m"
+            41: tx_data = "r"
+            42: tx_data = "d"
+            43: tx_data = ":"
+            
+            45: bin2hex.bin = motherboard.mrd[31:28]; tx_data = bin2hex.out;
+            46: bin2hex.bin = motherboard.mrd[27:24]; tx_data = bin2hex.out;
+            47: bin2hex.bin = motherboard.mrd[23:20]; tx_data = bin2hex.out;
+            48: bin2hex.bin = motherboard.mrd[19:16]; tx_data = bin2hex.out;
+            49: bin2hex.bin = motherboard.mrd[15:12]; tx_data = bin2hex.out;
+            50: bin2hex.bin = motherboard.mrd[11:8]; tx_data = bin2hex.out;
+            51: bin2hex.bin = motherboard.mrd[7:4]; tx_data = bin2hex.out;
+            52: bin2hex.bin = motherboard.mrd[3:0]; tx_data = bin2hex.out;
+            53: tx_data = "\n"
+            54: tx_data = "m"
+            55: tx_data = "w"
+            56: tx_data = "d"
+            57: tx_data = ":"
+            
+            59: bin2hex.bin = motherboard.mwd[31:28]; tx_data = bin2hex.out;
+            60: bin2hex.bin = motherboard.mwd[27:24]; tx_data = bin2hex.out;
+            61: bin2hex.bin = motherboard.mwd[23:20]; tx_data = bin2hex.out;
+            62: bin2hex.bin = motherboard.mwd[19:16]; tx_data = bin2hex.out;
+            63: bin2hex.bin = motherboard.mwd[15:12]; tx_data = bin2hex.out;
+            64: bin2hex.bin = motherboard.mwd[11:8]; tx_data = bin2hex.out;
+            65: bin2hex.bin = motherboard.mwd[7:4]; tx_data = bin2hex.out;
+            66: bin2hex.bin = motherboard.mwd[3:0]; tx_data = bin2hex.out;
+            67: tx_data = "\n"
+            68: tx_data = "p"
+            69: tx_data = "c"
+            70: tx_data = "s"
+            71: tx_data = "e"
+            72: tx_data = "l"
+            73: tx_data = ":"
+            
+            75: bin2hex.bin = debug_pcsel[3:0]; tx_data = bin2hex.out;
+            76: tx_data = "\n"
+            77: tx_data = "a"
+            78: tx_data = "s"
+            79: tx_data = "e"
+            80: tx_data = "l"
+            81: tx_data = ":"
+            
+            83: bin2hex.bin = debug_asel[3:0]; tx_data = bin2hex.out;
+            84: tx_data = "\n"
+            85: tx_data = "b"
+            86: tx_data = "s"
+            87: tx_data = "e"
+            88: tx_data = "l"
+            89: tx_data = ":"
+            
+            91: bin2hex.bin = debug_bsel[3:0]; tx_data = bin2hex.out;
+            92: tx_data = "\n"
+            93: tx_data = "w"
+            94: tx_data = "d"
+            95: tx_data = "s"
+            96: tx_data = "e"
+            97: tx_data = "l"
+            98: tx_data = ":"
+            
+            100: bin2hex.bin = debug_wdsel[3:0]; tx_data = bin2hex.out;
+            101: tx_data = "\n"
+            102: tx_data = "i"
+            103: tx_data = "n"
+            104: tx_data = "b"
+            105: tx_data = "u"
+            106: tx_data = "f"
+            107: tx_data = ":"
+            
+            109: bin2hex.bin = motherboard.input_buffer[15:12]; tx_data = bin2hex.out;
+            110: bin2hex.bin = motherboard.input_buffer[11:8]; tx_data = bin2hex.out;
+            111: bin2hex.bin = motherboard.input_buffer[7:4]; tx_data = bin2hex.out;
+            112: bin2hex.bin = motherboard.input_buffer[3:0]; tx_data = bin2hex.out;
+            113: tx_data = "="
+            114: tx_data = "="
+            115: tx_data = "="
+            116: tx_data = "="
+            117: tx_data = "\n"
+            118: tx_data = "\n"
+            119: tx_data = "\n"
+            
+            default: bin2hex.bin = 0; tx_data = " "
+        }
+        
+        case (state.q) {
+	           States.IDLE:
+	               count.d = 0
+	               if (next) // TODO: make the transmit ready signal
+	                   state.d = States.TRANSMIT
+	            
+	           States.TRANSMIT:
+	               if (!tx_busy) {
+	                   count.d = count.q + 1
+	                   new_tx = 1
+	                   if (count.q == BUFFER_LEN - 1)
+	                       state.d = States.IDLE
+	               }
+	        }
     }
 }

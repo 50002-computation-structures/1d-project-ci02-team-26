@@ -22,6 +22,7 @@ module alchitry_top (
     sig alufn[6]
     
     alu alu()
+    
 
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
@@ -31,6 +32,7 @@ module alchitry_top (
         .rst(rst) {
             ws2811_driver driver(#PIXEL_COUNT(105))
             regfile_unit regfile()
+            clocks clocks()
         }
     }
     
@@ -43,8 +45,24 @@ module alchitry_top (
         io_segment = 8hff
         io_select = 4hf
         
+        // TODO: DELETE THIS WHEN YOU ACTUALLY HAVE THE SIGNALS
+        asel = 0
+        bsel = 0
+        wdsel = 0
+        rowshft = 0
+        alufn = 0
+        regfile.wa = 0
+        regfile.wd = 0
+        regfile.we = 0
+        regfile.ra1 = 0
+        regfile.ra2 = 0
+        regfile.rxc = 0
+        
         // Debug LEDs
         io_led[0] = alu.out[7:0]
+        
+        // Clock signal, which depends on register R0 (row height)
+        clocks.r0 = regfile.r0
         
         // ALU
         alu.alufn = alufn
@@ -79,13 +97,5 @@ module alchitry_top (
         driver.clear = 0
         driver.color = 0
         data = driver.data
-        
-        // Regfile
-        regfile.wa = 0
-        regfile.wd = 0
-        regfile.we = 0
-        regfile.ra1 = 0
-        regfile.ra2 = 0
-        regfile.rxc = 0
     }
 }

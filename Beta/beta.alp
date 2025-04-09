@@ -196,6 +196,18 @@
                     "type": "DiskFile",
                     "path": "source/x_bit_shifters.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "Component",
+                    "path": "Interfaces/uart_tx.luc"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/bin_to_hex.luc"
+                }
             }
         ],
         "constraintFiles": [
@@ -208,7 +220,13 @@
             {
                 "file": {
                     "type": "Component",
-                    "path": "Constraints/io_v1.acf"
+                    "path": "Constraints/io_v1_pulldown.acf"
+                }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "constraint/clock.acf"
                 }
             }
         ],
