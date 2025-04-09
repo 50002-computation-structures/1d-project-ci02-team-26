@@ -1,7 +1,31 @@
+// Supervisor bit is present, supervisor mode on
+// Sequence is: 
+//0x000 C03F0003 ADDC(R31, 3, R1)    Add R31(0) and 3, store into R1
+//0x004 C05F0002 ADDC(R31, 2, R2)    Add R31(0) and 2, store into R2
+//0x008 80611000 ADD(R1, R2, R3)     Add R1(3) and R2(2), store into R3
+//0x00C 90810800 CMPEQ(R1, R1, R4)   Compare R1(3) and R1(3), return 0
+//0x010 90A11800 CMPEQ(R1, R3, R5)   Compare R1(3) and R3(5), return 0
+//0x014 60C10005 LD(R1,5,R6)         Instruction 32h80611000 loaded into R6
+//0x018 64DF0030 ST(R6, 48, R31)     Instruction 32h80611000 from R6 stored in 0x030
+//0x01C 6CE70000 JMP(R7,R7) Supervisor bit cleared, user mode on, return to 0x000
+//0x000 C03F0003 ADDC(R31, 3, R1)    Add R31(0) and 3, store into R1
+//0x004 C05F0002 ADDC(R31, 2, R2)    Add R31(0) and 2, store into R2
+//0x008 80611000 ADD(R1, R2, R3)     Add R1(3) and R2(2), store into R3
+//0x00C 90810800 CMPEQ(R1, R1, R4)   Compare R1(3) and R1(3), return 0
+//0x010 90A11800 CMPEQ(R1, R3, R5)   Compare R1(3) and R3(5), return 0
+//0x014 60C10005 LD(R1,5,R6)         Instruction 32h80611000 loaded into R6
+//0x018 64DF0030 ST(R6, 48, R31)     Instruction 32h80611000 from R6 stored in 0x030
+//0x01C 6CE70000 JMP(R7,R7)          Supervisor bit already cleared
+//0x020 7BE4FFF7 BNE(R4, 0, R31)     Repeat from line 11
+
+
+
+
+
 module beta_manual_tester#(
     CLK_FREQ ~ 1000 : CLK_FREQ > 0)  
 (
-    input clk,              // 100MHz clock
+    input clk,              // 25MHz clock
     input rst,            // reset button (active low)
     output led [8],         // 8 user controllable LEDs
     output io_led [3][8],   // LEDs on IO Shield
