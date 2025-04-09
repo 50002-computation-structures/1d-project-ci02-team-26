@@ -13,19 +13,19 @@ module alchitry_top (
     
     sig rst                 // reset signal
     
+    const CLK_FREQ = $is_sim() ? 1_000 : 25_000_000 // put 1kHz for sim, 25MHz hardware and ensure that constraint did indeed specify this frequency
+    
     .clk(clk2) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
         
         .rst(rst) {
-            uart_tx tx(#BAUD(1_000_000), #CLK_FREQ(100_000_000))
+            beta_manual_tester beta_manual(.io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
+            uart_tx tx(#BAUD(115200), #CLK_FREQ(CLK_FREQ))
         }
     }
-    const CLK_FREQ = $is_sim() ? 1_000 : 25_000_000 // put 1kHz for sim, 25MHz hardware and ensure that constraint did indeed specify this frequency
     
-    beta_manual_tester beta_manual(.clk(clk2), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
- 
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
