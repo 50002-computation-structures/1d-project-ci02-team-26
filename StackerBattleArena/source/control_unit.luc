@@ -1,0 +1,32 @@
+module control_unit (
+    input clk_game,
+    input clk_oscillate,
+    input rst,
+    input r0[32],        // R0 row height register
+    input rd1[32],       // RD1 regfile addressable register
+    input action_btn,    // Action button that is already debounced and rising edge only
+    output rowshft[6],   // combinational output of how many rows to shift for display buffer
+    output rxc,          // display buffer clear
+    output ra1[4],       // register read address 1
+    output ra2[4],       // register read address 2
+    output wa[4],        // register write address
+    output we,           // register write enable
+    output alufn[6],     // ALU function
+    output asel[3],
+    output bsel[2],
+    output wdsel
+) {
+    always {
+        // TODO delete these that suppress errors!
+        rowshft = 0
+        rxc = 0
+        ra1 = 0
+        ra2 = 0
+        wa = 0
+        we = 0
+        alufn = 0
+        asel = 0
+        bsel = 0
+        wdsel = 0
+    }
+}
