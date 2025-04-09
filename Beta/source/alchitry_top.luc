@@ -1,5 +1,5 @@
 module alchitry_top (
-    input clk,              // 25MHz clock
+    input clk2,             // 25MHz clock
     input rst_n,            // reset button (active low)
     output led[8],          // 8 user controllable LEDs
     input usb_rx,            // USB->Serial input
@@ -13,14 +13,18 @@ module alchitry_top (
     
     sig rst                 // reset signal
     
-    .clk(clk) {
+    .clk(clk2) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
+        
+        .rst(rst) {
+            uart_tx tx(#BAUD(1_000_000), #CLK_FREQ(100_000_000))
+        }
     }
     const CLK_FREQ = $is_sim() ? 1_000 : 25_000_000 // put 1kHz for sim, 25MHz hardware and ensure that constraint did indeed specify this frequency
     
-    beta_manual_tester beta_manual(.clk(clk), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
+    beta_manual_tester beta_manual(.clk(clk2), .rst(rst), .io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
  
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
@@ -28,7 +32,11 @@ module alchitry_top (
         
         led = 8h00             // turn LEDs off
         
-        usb_tx = usb_rx          // loop serial port
+        usb_tx = tx.tx          // connect tx output
+  	     tx.block = 0            // no flow control, do not block
+        tx.new_data = beta_manual.new_tx
+        tx.data = beta_manual.tx_data
+        beta_manual.tx_busy = tx.busy
         
         io_led = beta_manual.io_led
         io_segment = beta_manual.io_segment

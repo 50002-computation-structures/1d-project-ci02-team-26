@@ -8,7 +8,12 @@ module beta_manual_tester#(
     output io_segment [8],      // 7-segment LEDs on IO Shield
     output io_select [4],      // Digit select on IO Shield
     input io_button [5],    // 5 buttons on IO Shield
-    input io_dip [3][8]     // DIP switches on IO Shield
+    input io_dip [3][8],     // DIP switches on IO Shield
+    
+    // Serial port
+    output new_tx,     // new TX flag
+    output tx_data[8], // TX data
+    input tx_busy      // TX is busy flag
 ) {
     
     // helper signals
@@ -35,12 +40,23 @@ module beta_manual_tester#(
     
     // DISPLAY (for easy debugging)
     multi_seven_seg seg(.clk(clk),.rst(rst), #DIV($is_sim() ? 5 : 16)) // put div 5 for sim
+        
+    // serial port debugger
+    enum States {IDLE, TRANSMIT}
+    const BUFFER_LEN = 64
+    bin_to_hex_ascii bin2hex()
+    
+    .clk(clk) {
+	        .rst(rst) {
+	            dff state[$width(States)]
+	        }
+	        dff count[$clog2(BUFFER_LEN)](#INIT(0)) // buffer counter
+	    }
     
     always {
         io_led = 3x{{h00}}       // turn all LED off at first
         io_segment = 8hff // connect segments to the driver
         io_select = 4hf // connect digit select to the driver
-        
         
         led = c{3b0, io_button}  // connect buttons to LEDs
         
@@ -146,5 +162,60 @@ module beta_manual_tester#(
                 io_led[1:0] = {motherboard.output_buffer[15:8], motherboard.output_buffer[7:0]}
                 seg.values = {motherboard.output_buffer[15:12], motherboard.output_buffer[11:8], motherboard.output_buffer[7:4],motherboard.output_buffer[3:0]} 
         }
+        
+        // serial debugger
+        new_tx = 0 // default to 0
+        bin2hex.bin = 0
+        
+        // Leave blank entry for space character
+        case (count.q) {
+            0: tx_data = "i"
+            1: tx_data = "d"
+            2: tx_data = ":"
+            
+            4: bin2hex.bin = motherboard.id[31:28]; tx_data = bin2hex.out;
+            5: bin2hex.bin = motherboard.id[27:24]; tx_data = bin2hex.out;
+            6: bin2hex.bin = motherboard.id[23:20]; tx_data = bin2hex.out;
+            7: bin2hex.bin = motherboard.id[19:16]; tx_data = bin2hex.out;
+            8: bin2hex.bin = motherboard.id[15:12]; tx_data = bin2hex.out;
+            9: bin2hex.bin = motherboard.id[11:8]; tx_data = bin2hex.out;
+            10: bin2hex.bin = motherboard.id[7:4]; tx_data = bin2hex.out;
+            11: bin2hex.bin = motherboard.id[3:0]; tx_data = bin2hex.out;
+            12: tx_data = "\n"
+            
+            13: tx_data = "i"
+            14: tx_data = "a"
+            15: tx_data = ":"
+            
+            17: bin2hex.bin = motherboard.ia[31:28]; tx_data = bin2hex.out;
+            18: bin2hex.bin = motherboard.ia[27:24]; tx_data = bin2hex.out;
+            19: bin2hex.bin = motherboard.ia[23:20]; tx_data = bin2hex.out;
+            20: bin2hex.bin = motherboard.ia[19:16]; tx_data = bin2hex.out;
+            21: bin2hex.bin = motherboard.ia[15:12]; tx_data = bin2hex.out;
+            22: bin2hex.bin = motherboard.ia[11:8]; tx_data = bin2hex.out;
+            23: bin2hex.bin = motherboard.ia[7:4]; tx_data = bin2hex.out;
+            24: bin2hex.bin = motherboard.ia[3:0]; tx_data = bin2hex.out;
+            25: tx_data = "\n"
+            
+            62: tx_data = "\n"
+            63: tx_data = "\n"
+            
+            default: tx_data = " "
+        }
+        
+        case (state.q) {
+	           States.IDLE:
+	               count.d = 0
+	               if (next) // TODO: make the transmit ready signal
+	                   state.d = States.TRANSMIT
+	            
+	           States.TRANSMIT:
+	               if (!tx_busy) {
+	                   count.d = count.q + 1
+	                   new_tx = 1
+	                   if (count.q == BUFFER_LEN - 1)
+	                       state.d = States.IDLE
+	               }
+	        }
     }
 }
