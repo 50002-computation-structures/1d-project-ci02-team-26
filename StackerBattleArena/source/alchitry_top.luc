@@ -14,6 +14,13 @@ module alchitry_top (
 
     sig rst                 // reset signal
     
+    sig asel[3]
+    sig bsel[2]            // asel and bsel signals
+    sig wdsel              // wdsel signal
+    sig rowshft[6]         // special rowshift value
+    
+    sig alufn[6]
+    
     alu alu()
 
     .clk(clk) {
@@ -30,21 +37,42 @@ module alchitry_top (
     always {
         reset_cond.in = ~rst_n  // input raw inverted reset signal
         rst = reset_cond.out    // conditioned reset
-        
         led = 8h00              // turn LEDs off
-        
         usb_tx = usb_rx         // loop serial port
-        
-        // ALU
-        alu.a = 0
-        alu.b = 0
-        alu.alufn = 0
-        
         io_led = 3x{{8h00}}
         io_segment = 8hff
         io_select = 4hf
         
+        // Debug LEDs
         io_led[0] = alu.out[7:0]
+        
+        // ALU
+        alu.alufn = alufn
+        
+        // ALU input selectors ASEL and BSEL
+        case (asel) {
+            0: alu.a = regfile.rd1
+            1: alu.a = 32h00000000
+            2: alu.a = 32h00000001
+            3: alu.a = 32h0000000f
+            4: alu.a = 32h000000ff
+            default: alu.a = 0
+        }
+        
+        case (bsel) {
+            0: alu.b = regfile.rd2
+            1: alu.b = 32h00000000
+            2: alu.b = 32h00000001
+            3: alu.b = rowshft
+            default: alu.b = 0
+        }
+        
+        // ALU output selector WDSEL
+        case (wdsel) {
+            0: regfile.wd = alu.out
+            1: regfile.wd = 0
+        }
+        
         
         // LED driver
         driver.update = 0
