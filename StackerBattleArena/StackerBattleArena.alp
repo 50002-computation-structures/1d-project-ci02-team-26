@@ -136,6 +136,12 @@
                     "type": "DiskFile",
                     "path": "source/control_unit.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/led_unit.luc"
+                }
             }
         ],
         "constraintFiles": [

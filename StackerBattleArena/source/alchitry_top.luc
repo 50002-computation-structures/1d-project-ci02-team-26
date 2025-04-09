@@ -22,17 +22,23 @@ module alchitry_top (
     sig alufn[6]
     
     alu alu()
+    control_unit control_unit(.rst(rst))
     
+    const CLK_FREQ = $is_sim() ? 1000 : 100_000_000
 
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
         
+        // TODO: change the input of this button conditioner to the actual button!
+        button_conditioner action_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[1]))
+        edge_detector action_btn_edge(#RISE(1), #FALL(0), .in(action_btn_conditioner.out))
+        
         .rst(rst) {
-            ws2811_driver driver(#PIXEL_COUNT(105))
             regfile_unit regfile()
             clocks clocks()
+            led_unit led_unit()
         }
     }
     
@@ -64,6 +70,13 @@ module alchitry_top (
         // Clock signal, which depends on register R0 (row height)
         clocks.r0 = regfile.r0
         
+        // Control Unit!!
+        control_unit.clk_game = clocks.clk_game
+        control_unit.clk_oscillate = clocks.clk_oscillate
+        control_unit.r0 = regfile.r0
+        control_unit.rd1 = regfile.rd1
+        control_unit.action_btn = action_btn_edge.out
+        
         // ALU
         alu.alufn = alufn
         
@@ -76,7 +89,6 @@ module alchitry_top (
             4: alu.a = 32h000000ff
             default: alu.a = 0
         }
-        
         case (bsel) {
             0: alu.b = regfile.rd2
             1: alu.b = 32h00000000
@@ -91,11 +103,7 @@ module alchitry_top (
             1: regfile.wd = 0
         }
         
-        
-        // LED driver
-        driver.update = 0
-        driver.clear = 0
-        driver.color = 0
-        data = driver.data
+        // LED unit output
+        data = led_unit.data
     }
 }

@@ -1,0 +1,16 @@
+module led_unit (
+    input clk,  // clock
+    input rst,  // reset
+    output data
+) {
+    
+    ws2811_driver driver(#PIXEL_COUNT(120), .clk(clk), .rst(rst)) // 15 x 8 = 120
+    
+    always {
+        // LED driver
+        driver.update = 0
+        driver.clear = 0
+        driver.color = 0
+        data = driver.data
+    }
+}
