@@ -44,7 +44,7 @@ module regfile_memory (
         // ======================== Addressable read ports ========================
         // implement two output read ports
         // read ports are defined by rd1, rd2 outputs and ra1, ra2 inputs
-        rd1 = registers.q[ra1] // note that rd1 port is wired directly to PCSEL for JMP instructions
+        rd1 = registers.q[ra1]
         rd2 = registers.q[ra2]
         
         // ======================== Addressable write ports ========================
@@ -56,16 +56,6 @@ module regfile_memory (
         }
         
         // ======================== Special registers ========================
-        
-        // Register 31 is a special register that always reads 0
-        if (ra1 == 5b11111)
-        {
-            rd1 = 32h00000000
-        }
-        if (ra2 == 5b11111)
-        {
-            rd2 = 32h00000000
-        }
         
         // Special direct output registers
         r0 = registers.q[0]

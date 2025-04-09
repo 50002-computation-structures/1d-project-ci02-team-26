@@ -1,0 +1,83 @@
+testbench regfile_tb {
+    sig clk
+    sig rst
+    regfile_unit regfile(.clk(clk), .rst(rst))
+
+    fun tick_clock() {
+        clk = 1
+        $silent_tick() // tick without capturing signals
+        clk = 0
+        $tick()
+    }
+
+    test myTest {
+        clk = 0 // initialize the value
+        rst = 0
+        regfile.ra1 = 0
+        regfile.ra2 = 0
+        regfile.wa = 0
+        regfile.we = 0
+        regfile.wd = 0
+        regfile.rxc = 0
+        $tick() // capture initial state
+
+        // test goes here
+        rst = 1
+        $tick_clock()
+        rst = 0
+        $tick_clock()
+        
+        // check all registers is 0 upon initialisation
+        repeat (i, 32) {
+            regfile.ra1 = i
+            $assert(regfile.rd1 == 0)
+            $tick_clock()
+        }
+        
+        repeat (i, 32) {
+            regfile.ra2 = i
+            $assert(regfile.rd2 == 0)
+            $tick_clock()
+        }
+        
+        repeat (i, 4) {
+            $assert(regfile.rx[i] == 0)
+            $tick_clock()
+        }
+        
+        // fill all registers
+        regfile.we = 1
+        repeat (i, 32) {
+            regfile.wa = i
+            regfile.wd = 32hdeadbeef
+            $tick_clock()
+        }
+        regfile.we = 0
+        regfile.wd = 0
+                
+        // check all registers
+        repeat (i, 32) {
+            regfile.ra1 = i
+            $assert(regfile.rd1 == hdeadbeef)
+            regfile.ra2 = i
+            $assert(regfile.rd2 == hdeadbeef)
+            $tick_clock()
+        }
+        
+        repeat (i, 4) {
+            $assert(regfile.rx[i] == hdeadbeef)
+            $tick_clock()
+        }
+        
+        // Test display buffer specific reset signals
+        regfile.rxc = 1
+        $tick_clock()
+        regfile.rxc = 0
+        repeat (i, 4) {
+            $assert(regfile.rx[i] == 0)
+            $tick_clock()
+        }
+        
+        
+    }
+}
