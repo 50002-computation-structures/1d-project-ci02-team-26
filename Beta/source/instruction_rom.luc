@@ -10,10 +10,10 @@ output numinstr[10]
     // CHECKOFF: write your own test instruction fulfilling the requirements written in the lab handout
     const INSTRUCTIONS = {    
  
-     32h77E5FFF7, // 0x20 BEQ(R5, 0, R31) Checks if R5 == 0, if so, return to 0x000 
+     32h77E5FFF7, // 0x20 BNE(R4, 0, R31) Checks if R4 == 0, if so, return to 0x000 
      32h6CE70000, // 0x01C JMP(R7, R7) Stores next instruction into R7, returns to EA 0x000 with no supervisor bit, 
-                  // next cycle JMP(R7, R7) will return to 0x020 with supervisor bit to be returned in next cycle
-     32h64C1000D, // 0x018 ST(R6,13,R1)  Replaces EA 0x010 with content of R6 (32h80611000)
+                  // next cycle JMP(R7, R7) will go to 0x020 with no supervisor but in future cycles
+     32h64C1000D, // 0x018 ST(R6,48,R31)  Replaces EA 0x030 with content of R6 (32h80611000)
      32h60C10005, // 0x014 LD(R1, 5, R6)  Stores instruction 32h80611000 into R6  
      32h90A11800, // 0x010 CMPEQ(R1, R3, R5) Compares R1 and R3, returns 0, stored in R5
      32h90810800, // 0x00C CMPEQ(R1, R1, R4) Compares R1 and R1, returns 1, stored in R4

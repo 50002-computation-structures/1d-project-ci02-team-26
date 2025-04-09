@@ -1,5 +1,5 @@
 module alchitry_top (
-    input clk2,             // 25MHz clock
+    input clk,             // 25MHz clock
     input rst_n,            // reset button (active low)
     output led[8],          // 8 user controllable LEDs
     input usb_rx,            // USB->Serial input
@@ -15,7 +15,7 @@ module alchitry_top (
     
     const CLK_FREQ = $is_sim() ? 1_000 : 25_000_000 // put 1kHz for sim, 25MHz hardware and ensure that constraint did indeed specify this frequency
     
-    .clk(clk2) {
+    .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
