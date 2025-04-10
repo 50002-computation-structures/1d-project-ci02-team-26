@@ -215,8 +215,8 @@ module beta_manual_tester#(
             20: bin2hex.bin = motherboard.ia[19:16]; tx_data = bin2hex.out;
             21: bin2hex.bin = motherboard.ia[15:12]; tx_data = bin2hex.out;
             22: bin2hex.bin = motherboard.ia[11:8]; tx_data = bin2hex.out;
-            24: bin2hex.bin = motherboard.ia[7:4]; tx_data = bin2hex.out;
-            25: bin2hex.bin = motherboard.ia[3:0]; tx_data = bin2hex.out;
+            23: bin2hex.bin = motherboard.ia[7:4]; tx_data = bin2hex.out;
+            24: bin2hex.bin = motherboard.ia[3:0]; tx_data = bin2hex.out;
             26: tx_data = "\n"
             27: tx_data = "m"
             28: tx_data = "a"
@@ -304,13 +304,16 @@ module beta_manual_tester#(
             110: bin2hex.bin = motherboard.input_buffer[11:8]; tx_data = bin2hex.out;
             111: bin2hex.bin = motherboard.input_buffer[7:4]; tx_data = bin2hex.out;
             112: bin2hex.bin = motherboard.input_buffer[3:0]; tx_data = bin2hex.out;
-            113: tx_data = "="
+            113: tx_data = "\n"
             114: tx_data = "="
             115: tx_data = "="
             116: tx_data = "="
-            117: tx_data = "\n"
-            118: tx_data = "\n"
-            119: tx_data = "\n"
+            117: tx_data = "="
+            118: tx_data = "="
+            119: tx_data = "="
+            120: tx_data = "\n"
+            121: tx_data = "\n"
+            122: tx_data = "\n"
             
             default: bin2hex.bin = 0; tx_data = " "
         }
