@@ -22,7 +22,7 @@ module alchitry_top (
         
         .rst(rst) {
             beta_manual_tester beta_manual(.io_button(io_button), .io_dip(io_dip), #CLK_FREQ(CLK_FREQ))
-            uart_tx tx(#BAUD(1_000_000))
+            uart_tx tx(#BAUD(1_000_000), #CLK_FREQ(100_000_000))
         }
     }
     

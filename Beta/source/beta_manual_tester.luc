@@ -67,7 +67,7 @@ module beta_manual_tester#(
         
     // serial port debugger
     enum States {IDLE, TRANSMIT}
-    const BUFFER_LEN = 120
+    const BUFFER_LEN = 122
     bin_to_hex_ascii bin2hex()
     
     .clk(clk) {
