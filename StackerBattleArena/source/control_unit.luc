@@ -26,19 +26,45 @@ module control_unit (
     // State Machine
     enum States {
         MENU_START, 
+        
         GAME_START_1, 
         GAME_START_2, 
+        GAME_START_3,
+        GAME_START_4,
+        GAME_START_5,
+        
+        GAME_IDLE,
+        GAME_SHFT_BLK,
+        GAME_SHFT_BLK2,
+        GAME_SHFT_BLK3,
+        GAME_SHFT,
+        
+        GAME_STORE1,
+        GAME_STORE2,
+        
+        GAME_DRAW1,
+        GAME_DRAW2,
+        GAME_DRAW3,
+        GAME_DRAW4,
+        GAME_DRAW5,
+        
+        GAME_ACTION,
+        GAME_ACTION2,
+        GAME_ACTION3,
+        GAME_ACTION4,
+        GAME_ACTION5,
+        
         DEBUG
     }
     
     // Serial debugger
-    const BUFFER_LEN = 56
+    const BUFFER_LEN = 129
     const DEBUG_ENABLED = 1
     bin_to_hex_ascii bin2hex()
     
     // Signals
     sig rowreg[3]
-        
+    
     .clk(clk) {
         .rst(rst) {
             dff toPrintDebug(#INIT(DEBUG_ENABLED)) // 1 means need to print debug statement. debug should only be printed once per state!
@@ -108,55 +134,128 @@ module control_unit (
             
             7: bin2hex.bin = currState.q; tx_data = bin2hex.out;
             8: tx_data = "\n"
-            9: tx_data  = "a"
-            10: tx_data = "s"
-            11: tx_data = "e"
-            12: tx_data = "l"
-            13: tx_data = ":"
+            9: tx_data  = "r"
+            10: tx_data = "a"
+            11: tx_data = "1"
+            12: tx_data = ":"
             
-            15: bin2hex.bin = asel_x.q; tx_data = bin2hex.out;
-            16: tx_data = "\n"
-            17: tx_data = "-"
-            18: tx_data = "-"
-            19: tx_data = "-"
-            20: tx_data = "-"
-            21: tx_data = "-"
-            22: tx_data = "-"
-            23: tx_data = "-"
-            24: tx_data = "-"
-            25: tx_data = "-"
-            26: tx_data = "-"
-            27: tx_data = "-"
-            28: tx_data = "-"
-            29: tx_data = "\n"
-            30: tx_data = "r"
-            31: tx_data = "0"
-            32: tx_data = ":"
+            13: bin2hex.bin = ra1_x.q; tx_data = bin2hex.out;
+            14: tx_data = "\n"
+            15: tx_data  = "r"
+            16: tx_data = "a"
+            17: tx_data = "2"
+            18: tx_data = ":"
             
-            34: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
-            35: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
-            36: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
-            37: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
-            38: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
-            39: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
-            40: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
-            41: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
-            42: tx_data = "\n"
+            20: bin2hex.bin = ra2_x.q; tx_data = bin2hex.out;
+            21: tx_data = "\n"
+            22: tx_data  = "r"
+            23: tx_data = "x"
+            24: tx_data = "c"
+            25: tx_data = ":"
             
-            43: tx_data = "="
-            44: tx_data = "="
-            45: tx_data = "="
-            46: tx_data = "="
-            47: tx_data = "="
-            48: tx_data = "="
-            49: tx_data = "="
-            50: tx_data = "="
-            51: tx_data = "="
-            52: tx_data = "="
-            53: tx_data = "="
-            54: tx_data = "="
+            27: bin2hex.bin = rxc_x.q; tx_data = bin2hex.out;
+            28: tx_data = "\n"
+            29: tx_data  = "a"
+            30: tx_data = "s"
+            31: tx_data = "e"
+            32: tx_data = "l"
+            33: tx_data = ":"
+            
+            34: bin2hex.bin = asel_x.q; tx_data = bin2hex.out;
+            35: tx_data = "\n"
+            36: tx_data  = "b"
+            37: tx_data = "s"
+            38: tx_data = "e"
+            39: tx_data = "l"
+            40: tx_data = ":"
+            
+            42: bin2hex.bin = bsel_x.q; tx_data = bin2hex.out;
+            43: tx_data = "\n"
+            44: tx_data  = "w"
+            45: tx_data = "e"
+            46: tx_data = ":"
+            
+            48: bin2hex.bin = we_x.q; tx_data = bin2hex.out;
+            49: tx_data = "\n"
+            50: tx_data  = "w"
+            51: tx_data = "a"
+            52: tx_data = ":"
+            
+            54: bin2hex.bin = wa_x.q; tx_data = bin2hex.out;
             55: tx_data = "\n"
-            56: tx_data = "\n"
+            56: tx_data = "w"
+            57: tx_data = "d"
+            58: tx_data = "s"
+            59: tx_data = "e"
+            60: tx_data = "l"
+            61: tx_data = ":"
+            
+            63: bin2hex.bin = wdsel_x.q; tx_data = bin2hex.out;
+            64: tx_data = "\n"
+            65: tx_data = "a"
+            66: tx_data = "l"
+            67: tx_data = "u"
+            68: tx_data = "f"
+            69: tx_data = "n"
+            70: tx_data = ":"
+            
+            72: bin2hex.bin = alufn_x.q[5:4]; tx_data = bin2hex.out;
+            73: bin2hex.bin = alufn_x.q[3:0]; tx_data = bin2hex.out;
+            74: tx_data = "\n"
+            75: tx_data = "-"
+            76: tx_data = "-"
+            77: tx_data = "-"
+            78: tx_data = "-"
+            79: tx_data = "-"
+            80: tx_data = "-"
+            81: tx_data = "-"
+            82: tx_data = "-"
+            83: tx_data = "-"
+            84: tx_data = "-"
+            85: tx_data = "-"
+            86: tx_data = "-"
+            87: tx_data = "\n"
+            88: tx_data = "r"
+            89: tx_data = "0"
+            90: tx_data = ":"
+            
+            92: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
+            93: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
+            94: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
+            95: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
+            96: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
+            97: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
+            98: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
+            99: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
+            100: tx_data = "\n"
+            101: tx_data = "r"
+            102: tx_data = "d"
+            103: tx_data = "1"
+            104: tx_data = ":"
+            
+            106: bin2hex.bin = rd1[31:28]; tx_data = bin2hex.out;
+            107: bin2hex.bin = rd1[27:24]; tx_data = bin2hex.out;
+            108: bin2hex.bin = rd1[23:20]; tx_data = bin2hex.out;
+            109: bin2hex.bin = rd1[19:16]; tx_data = bin2hex.out;
+            110: bin2hex.bin = rd1[15:12]; tx_data = bin2hex.out;
+            111: bin2hex.bin = rd1[11:8]; tx_data = bin2hex.out;
+            112: bin2hex.bin = rd1[7:4]; tx_data = bin2hex.out;
+            113: bin2hex.bin = rd1[3:0]; tx_data = bin2hex.out;
+            114: tx_data = "\n"
+            115: tx_data = "="
+            116: tx_data = "="
+            117: tx_data = "="
+            118: tx_data = "="
+            119: tx_data = "="
+            120: tx_data = "="
+            121: tx_data = "="
+            122: tx_data = "="
+            123: tx_data = "="
+            124: tx_data = "="
+            125: tx_data = "="
+            126: tx_data = "="
+            127: tx_data = "\n"
+            128: tx_data = "\n"
 
             default: bin2hex.bin = 0; tx_data = " "
         }
@@ -189,15 +288,15 @@ module control_unit (
             States.GAME_START_1:
                 // STORE_LITERAL (ASEL=2, WA=R0)
                 /*
-                ALUFN = “A”		(let ALU pass through input A to output)
-                ASEL = ASEL
-                RA1 = x
-                RA2 = x
-                BSEL = x
-                WE = 1		(enable write to RegFile)
-                WA = WA		(write to register defined by WA)
-                WDSEL = 0		(write from ALU output)
-                RXC=0
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
                 */
                 
                 alufn_x.d = b011010
@@ -215,20 +314,32 @@ module control_unit (
                 if (toPrintDebug.q) {
                     currState.d = States.GAME_START_1
                     state.d = States.DEBUG
-                }
-                else if (action_btn) {
+                } else {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_START_2
                 }
             
             States.GAME_START_2:
+                // STORE_LITERAL (ASEL=3, WA=R1)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                
                 alufn_x.d = b011010
-                asel_x.d = 1 // set r0 to 0
+                asel_x.d = 3 // set r1 to 0xf
                 ra1_x.d = 0
                 ra2_x.d = 0
                 bsel_x.d = 0
                 we_x.d = 1
-                wa_x.d = 0 // R0
+                wa_x.d = 1 // R1
                 wdsel_x.d = 0
                 rxc_x.d = 0
                 
@@ -240,8 +351,11 @@ module control_unit (
                 }
                 else if (action_btn) {
                     toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.MENU_START
+                    state.d = States.GAME_START_3
                 }
+            
+            States.GAME_START_3:
+                
             
             States.DEBUG:
                 // print out all control signals within here and jump back to the original state

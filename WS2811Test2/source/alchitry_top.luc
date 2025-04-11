@@ -19,9 +19,12 @@ module alchitry_top (
         2b10, 2b11, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
-        2b01, 2b10
-    }) // 50 entries here
-    const PIXEL_COUNT = 10d50 // must correspond to the same size as DISPLAY
+        2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+        2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+        2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+        2b01, 2b00, 2b01, 2b10
+    }) // 100 entries here
+    const PIXEL_COUNT = 10d100 // must correspond to the same size as DISPLAY
 
     sig rst                 // reset signal
     sig pixel_address[BUFFER_SIZE]
