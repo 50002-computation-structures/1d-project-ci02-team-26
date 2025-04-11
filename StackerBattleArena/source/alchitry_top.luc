@@ -24,15 +24,17 @@ module alchitry_top (
         reset_conditioner reset_cond
         
         // TODO: change the input of this button conditioner to the actual button!
-        button_conditioner action_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[1]))
+        button_conditioner action_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[1]))    // centre button
         edge_detector action_btn_edge(#RISE(1), #FALL(0), .in(action_btn_conditioner.out))
         
         // Buttons for simulating clock inputs
-        button_conditioner clkosc_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[0]))
+        button_conditioner clkosc_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[0]))    // top button
         edge_detector clkosc_btn_edge(#RISE(1), #FALL(0), .in(clkosc_btn_conditioner.out))
         
-        button_conditioner clkgame_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[2]))
+        button_conditioner clkgame_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[2]))   // down button
         edge_detector clkgame_btn_edge(#RISE(1), #FALL(0), .in(clkgame_btn_conditioner.out))
+        
+        // button 3 is left, 4 is right
         
         .rst(rst) {
             regfile_unit regfile()
@@ -60,8 +62,9 @@ module alchitry_top (
         usb_tx = tx.tx
         
         // Debug LEDs
-        io_led[0] = alu.out[7:0]
-        io_led[1] = control_unit.stateMachine
+        io_led[0] = regfile.rx[0][7:0]
+        io_led[1] = regfile.rx[0][15:8]
+        io_led[2] = regfile.rx[0][23:16]
         
         // Control Unit!!
         if (io_dip[0][0]) {
@@ -75,6 +78,7 @@ module alchitry_top (
         control_unit.r0 = regfile.r0
         control_unit.rd1 = regfile.rd1
         control_unit.action_btn = action_btn_edge.out
+        control_unit.shift_ok = regfile.shift_ok
         regfile.wa = control_unit.wa
         regfile.we = control_unit.we
         regfile.ra1 = control_unit.ra1

@@ -6,6 +6,7 @@ module control_unit (
     input r0[32],        // R0 row height register
     input rd1[32],       // RD1 regfile addressable register
     input action_btn,    // Action button that is already debounced and rising edge only
+    input shift_ok[4],   // special 4-bit indicator to indicate at what point are the squares ok to shift on the screen
     output rowshft[6],   // combinational output of how many rows to shift for display buffer
     output rxc,          // display buffer clear
     output ra1[4],       // register read address 1
@@ -16,7 +17,6 @@ module control_unit (
     output asel[3],
     output bsel[2],
     output wdsel,
-    output stateMachine[8],
     
     // Serial port
     output new_tx,     // new TX flag
@@ -25,34 +25,34 @@ module control_unit (
 ) {
     // State Machine
     enum States {
-        MENU_START, 
+        MENU_START_00, 
         
-        GAME_START_1, 
-        GAME_START_2, 
-        GAME_START_3,
-        GAME_START_4,
-        GAME_START_5,
+        GAME_START_1_01, 
+        GAME_START_2_02, 
+        GAME_START_3_03,
+        GAME_START_4_04,
+        GAME_START_5_05,
         
-        GAME_IDLE,
-        GAME_SHFT_BLK,
-        GAME_SHFT_BLK2,
-        GAME_SHFT_BLK3,
-        GAME_SHFT,
+        GAME_IDLE_06,
+        GAME_SHFT_BLK_07,
+        GAME_SHFT_BLK2_08,
+        GAME_SHFT_BLK3_09,
+        GAME_SHFT_10,
         
-        GAME_STORE1,
-        GAME_STORE2,
+        GAME_STORE1_11,
+        GAME_STORE2_12,
         
-        GAME_DRAW1,
-        GAME_DRAW2,
-        GAME_DRAW3,
-        GAME_DRAW4,
-        GAME_DRAW5,
+        GAME_DRAW1_13,
+        GAME_DRAW2_14,
+        GAME_DRAW3_15,
+        GAME_DRAW4_16,
+        GAME_DRAW5_17,
         
-        GAME_ACTION,
-        GAME_ACTION2,
-        GAME_ACTION3,
-        GAME_ACTION4,
-        GAME_ACTION5,
+        GAME_ACTION_18,
+        GAME_ACTION2_19,
+        GAME_ACTION3_20,
+        GAME_ACTION4_21,
+        GAME_ACTION5_22,
         
         DEBUG
     }
@@ -68,8 +68,8 @@ module control_unit (
     .clk(clk) {
         .rst(rst) {
             dff toPrintDebug(#INIT(DEBUG_ENABLED)) // 1 means need to print debug statement. debug should only be printed once per state!
-            dff state[$width(States)](#INIT(States.MENU_START)) // actual state
-            dff currState[$width(States)](#INIT(States.MENU_START)) // current state (without debug transitions)
+            dff state[$width(States)](#INIT(States.MENU_START_00)) // actual state
+            dff currState[$width(States)](#INIT(States.MENU_START_00)) // current state (without debug transitions)
             
             // Output registers
             dff alufn_x[6](#INIT(0))
@@ -89,7 +89,6 @@ module control_unit (
     
     always {
         state.d = state.q
-        stateMachine = state.q
         currState.d = currState.q
         new_tx = 0
         bin2hex.bin = 0
@@ -131,8 +130,8 @@ module control_unit (
             3: tx_data = "t"
             4: tx_data = "e"
             5: tx_data = ":"
-            
-            7: bin2hex.bin = currState.q; tx_data = bin2hex.out;
+            6: bin2hex.bin = currState.q[4]; tx_data = bin2hex.out;
+            7: bin2hex.bin = currState.q[3:0]; tx_data = bin2hex.out;
             8: tx_data = "\n"
             9: tx_data  = "r"
             10: tx_data = "a"
@@ -262,7 +261,7 @@ module control_unit (
         
         // State machine
         case (state.q) {
-            States.MENU_START:
+            States.MENU_START_00:
                 // NOP()
                 alufn_x.d = b000000
                 asel_x.d = 0
@@ -277,15 +276,15 @@ module control_unit (
                 // Debug stub and state transitions
                 count.d = 0
                 if (toPrintDebug.q) {
-                    currState.d = States.MENU_START
+                    currState.d = States.MENU_START_00
                     state.d = States.DEBUG
                 }
                 else if (action_btn) {
                     toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_START_1
+                    state.d = States.GAME_START_1_01
                 }
                 
-            States.GAME_START_1:
+            States.GAME_START_1_01:
                 // STORE_LITERAL (ASEL=2, WA=R0)
                 /*
                     ALUFN = “A”		(let ALU pass through input A to output)
@@ -312,14 +311,14 @@ module control_unit (
                 // Debug stub and state transitions
                 count.d = 0
                 if (toPrintDebug.q) {
-                    currState.d = States.GAME_START_1
+                    currState.d = States.GAME_START_1_01
                     state.d = States.DEBUG
                 } else {
                     toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_START_2
+                    state.d = States.GAME_START_2_02
                 }
             
-            States.GAME_START_2:
+            States.GAME_START_2_02:
                 // STORE_LITERAL (ASEL=3, WA=R1)
                 /*
                     ALUFN = “A”		(let ALU pass through input A to output)
@@ -346,15 +345,276 @@ module control_unit (
                 // Debug stub and state transitions
                 count.d = 0
                 if (toPrintDebug.q) {
-                    currState.d = States.GAME_START_2
+                    currState.d = States.GAME_START_2_02
                     state.d = States.DEBUG
                 }
-                else if (action_btn) {
+                else {
                     toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_START_3
+                    state.d = States.GAME_START_3_03
                 }
             
-            States.GAME_START_3:
+            States.GAME_START_3_03:
+                //CLEAR_DISP ()
+                /*
+                    ALUFN = x
+                    ASEL = x
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 0		(disable write to RegFile)
+                    WA = x
+                    WDSEL = 1		(0 literal)
+                    RXC=1
+                */
+                
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
+                we_x.d = 0
+                wa_x.d = bxxxx // R1
+                wdsel_x.d = 1
+                rxc_x.d = 1
+            
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_START_3_03
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_START_4_04
+                }
+            
+            States.GAME_START_4_04:
+                // STORE_LITERAL (ASEL=3, WA=RX0/R8)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b011010
+                asel_x.d = 3 // set r8 / rx0 to 0xf
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 8 // R8
+                wdsel_x.d = 0
+                rxc_x.d = 0
+            
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_START_4_04
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_START_5_05
+                }
+            
+            States.GAME_START_5_05:
+                // STORE_LITERAL (ASEL=4, WA=R6)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b011010
+                asel_x.d = 4 // set r6 to 0xff
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 6 // R6
+                wdsel_x.d = 0
+                rxc_x.d = 0
+            
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_START_5_05
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_IDLE_06
+                }
+            
+            States.GAME_IDLE_06:
+                // NOP()
+                alufn_x.d = b000000
+                asel_x.d = 0
+                ra1_x.d = b0000
+                ra2_x.d = b0000
+                bsel_x.d = 0
+                we_x.d = 0
+                wa_x.d = 0
+                wdsel_x.d = 1
+                rxc_x.d = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_IDLE_06
+                    state.d = States.DEBUG
+                }
+                else if (clk_game) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_DRAW1_13
+                }
+                else if (clk_oscillate) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_SHFT_BLK_07
+                }
+            
+            States.GAME_SHFT_BLK_07:
+                // NOP()
+                alufn_x.d = b000000
+                asel_x.d = 0
+                ra1_x.d = b0000
+                ra2_x.d = b0000
+                bsel_x.d = 0
+                we_x.d = 0
+                wa_x.d = 0
+                wdsel_x.d = 1
+                rxc_x.d = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_SHFT_BLK_07
+                    state.d = States.DEBUG
+                } else {
+                    case (shift_ok) {
+                        b1000: // ok to shift left
+                            state.d = States.GAME_SHFT_BLK2_08
+                        b0100: // ok to shift right
+                            state.d = States.GAME_SHFT_BLK3_09
+                        bxx10: // not ok to shift left, change to shift right
+                            state.d = States.GAME_STORE1_11
+                        bxx01: // not ok to shift right, change to shift left
+                            state.d = States.GAME_STORE2_12
+                        // default is intentionally omitted as the program should hang here for debug if weird things happen
+                    }
+                }
+                
+            States.GAME_SHFT_BLK2_08:
+                // SHIFT_1(ALUFN=SHL)
+                /*
+                    ALUFN = ALUFN	(either shift left or right)
+                    ASEL = 0		(RD1)
+                    RA1 = R1
+                    RA2 = x
+                    BSEL = 2		(1 literal)
+                    WE = 1		(enable write to RegFile)
+                    WA = R4
+                    WDSEL = 0		(ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b100000 // SHL
+                asel_x.d = 0
+                ra1_x.d = 1
+                ra2_x.d = bxxxx
+                bsel_x.d = 2 // 1 literal
+                we_x.d = 1
+                wa_x.d = 4    // write SHL of R1 by 1 into R4
+                wdsel_x.d = 0
+                rxc_x.d = 0
+            
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_SHFT_BLK2_08
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_SHFT_10
+                }
+            
+            States.GAME_SHFT_BLK3_09:
+                // SHIFT_1(ALUFN=SHR)
+                /*
+                    ALUFN = ALUFN	(either shift left or right)
+                    ASEL = 0		(RD1)
+                    RA1 = R1
+                    RA2 = x
+                    BSEL = 2		(1 literal)
+                    WE = 1		(enable write to RegFile)
+                    WA = R4
+                    WDSEL = 0		(ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b100001 // SHR
+                asel_x.d = 0
+                ra1_x.d = 1
+                ra2_x.d = bxxxx
+                bsel_x.d = 2 // 1 literal
+                we_x.d = 1
+                wa_x.d = 4    // write SHR of R1 by 1 into R4
+                wdsel_x.d = 0
+                rxc_x.d = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_SHFT_BLK3_09
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_SHFT_10
+                }
+            
+            States.GAME_SHFT_10:
+                // SHIFT_2()
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = 0		(RD1)
+                    RA1 = R4
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = R1
+                    WDSEL = 0		(ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b011010
+                asel_x.d = 0
+                ra1_x.d = 4
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
+                we_x.d = 1
+                wa_x.d = 1    // write contents of R4 into R1
+                wdsel_x.d = 0
+                rxc_x.d = 0
+            
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_SHFT_10
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_IDLE_06
+                }
                 
             
             States.DEBUG:
@@ -366,7 +626,23 @@ module control_unit (
 	                   if (count.q == BUFFER_LEN - 1) {
                         state.d = currState.q
                     }
-	               }                
+	               }       
+            
+            default:
+                alufn_x.d = b000000
+                asel_x.d = 0
+                ra1_x.d = b0000
+                ra2_x.d = b0000
+                bsel_x.d = 0
+                we_x.d = 0
+                wa_x.d = 0
+                wdsel_x.d = 1
+                rxc_x.d = 0
+                
+                if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.MENU_START_00
+                }
         }
         
     }
