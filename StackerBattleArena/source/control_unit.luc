@@ -1,7 +1,8 @@
 module control_unit (
+    input clk,
+    input rst,
     input clk_game,
     input clk_oscillate,
-    input rst,
     input r0[32],        // R0 row height register
     input rd1[32],       // RD1 regfile addressable register
     input action_btn,    // Action button that is already debounced and rising edge only
@@ -14,9 +15,38 @@ module control_unit (
     output alufn[6],     // ALU function
     output asel[3],
     output bsel[2],
-    output wdsel
+    output wdsel,
+    
+    // Serial port
+    output new_tx,     // new TX flag
+    output tx_data[8], // TX data
+    input tx_busy      // TX is busy flag
 ) {
+    // State Machine
+    enum States {MENU_START, GAME_START_1, DEBUG}
+    
+    // Serial debugger
+    const BUFFER_LEN = 37
+    const DEBUG_ENABLED = 1
+    bin_to_hex_ascii bin2hex()
+    
+    .clk(clk) {
+        .rst(rst) {
+            dff toPrintDebug(#INIT(DEBUG_ENABLED)) // 1 means need to print debug statement. debug should only be printed once per state!
+            dff state[$width(States)](#INIT(States.MENU_START)) // actual state
+            dff currState[$width(States)](#INIT(States.MENU_START)) // current state (without debug transitions)
+            
+            // Serial debugger
+            dff count[$clog2(BUFFER_LEN)](#INIT(0)) // buffer counter
+        }
+    }
+    
     always {
+        state.d = state.q
+        currState.d = currState.q
+        new_tx = 0
+        bin2hex.bin = 0
+        
         // TODO delete these that suppress errors!
         rowshft = 0
         rxc = 0
@@ -28,5 +58,123 @@ module control_unit (
         asel = 0
         bsel = 0
         wdsel = 0
+        
+        case (state.q) {
+            States.MENU_START:
+                // NOP()
+                alufn = b000000
+                asel = 0
+                ra1 = b0000
+                ra2 = b0000
+                bsel = 0
+                we = 0
+                wa = 0
+                wdsel = 1
+                rxc = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.MENU_START
+                    state.d = States.DEBUG
+                }
+                else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_START_1
+                }
+                
+            States.GAME_START_1:
+                // STORE_LITERAL (ASEL=2, WA=R0)
+                /*
+                ALUFN = “A”		(let ALU pass through input A to output)
+                ASEL = ASEL
+                RA1 = x
+                RA2 = x
+                BSEL = x
+                WE = 1		(enable write to RegFile)
+                WA = WA		(write to register defined by WA)
+                WDSEL = 0		(write from ALU output)
+                RXC=0
+                */
+                
+                alufn = b011010
+                asel = 2
+                ra1 = bxxxx
+                ra2 = bxxxx
+                bsel = bxx
+                we = 1
+                wa = 0 // R0
+                wdsel = 0
+                rxc = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_START_1
+                    state.d = States.DEBUG
+                }
+                else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.MENU_START
+                }
+            
+            States.DEBUG:
+                // print out all control signals within here and jump back to the original state
+                toPrintDebug.d = 0
+                if (!tx_busy) {
+	                   count.d = count.q + 1
+	                   new_tx = 1
+	                   if (count.q == BUFFER_LEN - 1) {
+                        state.d = currState.q
+                    }
+	               }
+        }
+        
+        // Serial debugger literals and data conversions
+        // Leave blank entry for space character
+        case (count.q) {
+            0: tx_data = "S"
+            1: tx_data = "t"
+            2: tx_data = "a"
+            3: tx_data = "t"
+            4: tx_data = "e"
+            5: tx_data = ":"
+            
+            7: bin2hex.bin = state.q; tx_data = bin2hex.out;
+            8: tx_data = "\n"
+            9: tx_data  = "a"
+            10: tx_data = "s"
+            11: tx_data = "e"
+            12: tx_data = "l"
+            13: tx_data = ":"
+            
+            //15: bin2hex.bin = asel; tx_data = bin2hex.out;
+            16: tx_data = "\n"
+            17: tx_data = "r"
+            18: tx_data = "0"
+            19: tx_data = ":"
+            
+            20: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
+            21: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
+            22: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
+            23: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
+            24: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
+            25: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
+            26: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
+            27: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
+            28: tx_data = "\n"
+            
+            29: tx_data = "="
+            30: tx_data = "="
+            31: tx_data = "="
+            32: tx_data = "="
+            33: tx_data = "="
+            34: tx_data = "="
+            35: tx_data = "="
+            36: tx_data = "\n"
+            37: tx_data = "\n"
+
+            default: bin2hex.bin = 0; tx_data = " "
+        }
     }
 }
