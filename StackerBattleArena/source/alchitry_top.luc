@@ -59,16 +59,9 @@ module alchitry_top (
         control_unit.tx_busy = tx.busy
         usb_tx = tx.tx
         
-        // TODO: DELETE THIS WHEN YOU ACTUALLY HAVE THE SIGNALS
-        regfile.wa = 0
-        regfile.wd = 0
-        regfile.we = 0
-        regfile.ra1 = 0
-        regfile.ra2 = 0
-        regfile.rxc = 0
-        
         // Debug LEDs
         io_led[0] = alu.out[7:0]
+        io_led[1] = control_unit.stateMachine
         
         // Control Unit!!
         if (io_dip[0][0]) {
@@ -82,6 +75,11 @@ module alchitry_top (
         control_unit.r0 = regfile.r0
         control_unit.rd1 = regfile.rd1
         control_unit.action_btn = action_btn_edge.out
+        regfile.wa = control_unit.wa
+        regfile.we = control_unit.we
+        regfile.ra1 = control_unit.ra1
+        regfile.ra2 = control_unit.ra2
+        regfile.rxc = control_unit.rxc
         
         // ALU
         alu.alufn = control_unit.alufn
@@ -106,7 +104,7 @@ module alchitry_top (
         // ALU output selector WDSEL
         case (control_unit.wdsel) {
             0: regfile.wd = alu.out
-            1: regfile.wd = 0
+            default: regfile.wd = 0
         }
         
         // LED unit output

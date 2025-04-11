@@ -16,6 +16,7 @@ module control_unit (
     output asel[3],
     output bsel[2],
     output wdsel,
+    output stateMachine[8],
     
     // Serial port
     output new_tx,     // new TX flag
@@ -23,18 +24,37 @@ module control_unit (
     input tx_busy      // TX is busy flag
 ) {
     // State Machine
-    enum States {MENU_START, GAME_START_1, DEBUG}
+    enum States {
+        MENU_START, 
+        GAME_START_1, 
+        GAME_START_2, 
+        DEBUG
+    }
     
     // Serial debugger
-    const BUFFER_LEN = 37
+    const BUFFER_LEN = 56
     const DEBUG_ENABLED = 1
     bin_to_hex_ascii bin2hex()
     
+    // Signals
+    sig rowreg[3]
+        
     .clk(clk) {
         .rst(rst) {
             dff toPrintDebug(#INIT(DEBUG_ENABLED)) // 1 means need to print debug statement. debug should only be printed once per state!
             dff state[$width(States)](#INIT(States.MENU_START)) // actual state
             dff currState[$width(States)](#INIT(States.MENU_START)) // current state (without debug transitions)
+            
+            // Output registers
+            dff alufn_x[6](#INIT(0))
+            dff asel_x[3](#INIT(0))
+            dff bsel_x[2](#INIT(0))
+            dff wa_x[4](#INIT(0))
+            dff we_x(#INIT(0))
+            dff wdsel_x(#INIT(0))
+            dff rxc_x(#INIT(0))
+            dff ra1_x[4](#INIT(0))
+            dff ra2_x[4](#INIT(0))
             
             // Serial debugger
             dff count[$clog2(BUFFER_LEN)](#INIT(0)) // buffer counter
@@ -43,34 +63,117 @@ module control_unit (
     
     always {
         state.d = state.q
+        stateMachine = state.q
         currState.d = currState.q
         new_tx = 0
         bin2hex.bin = 0
         
-        // TODO delete these that suppress errors!
-        rowshft = 0
+        // Prevent partially driven outputs
         rxc = 0
-        ra1 = 0
-        ra2 = 0
-        wa = 0
-        we = 0
-        alufn = 0
-        asel = 0
-        bsel = 0
-        wdsel = 0
+        ra1_x.d = ra1_x.q
+        ra2_x.d = ra2_x.q
+        wa_x.d = wa_x.q
+        we_x.d = we_x.q
+        alufn_x.d = alufn_x.q
+        asel_x.d = asel_x.q
+        bsel_x.d = bsel_x.q
+        wdsel_x.d = wdsel_x.q
+        rxc_x.d = rxc_x.q
         
+        // TODO: implement combinational ROWSHFT and ROWREG logic
+        rowshft = 0
+        rowreg = 0
+        
+        // Wiring outputs
+        asel = asel_x.q
+        bsel = bsel_x.q
+        we = we_x.q
+        wa = wa_x.q
+        alufn = alufn_x.q
+        wdsel = wdsel_x.q
+        rxc = rxc_x.q
+        ra1 = ra1_x.q
+        ra2 = ra2_x.q
+        
+        // Serial debugger literals and data conversions
+        // Leave blank entry for space character
+        // NOTE: during debugging, registers will only take effect upon the NEXT clock cycle
+        case (count.q) {
+            0: tx_data = "S"
+            1: tx_data = "t"
+            2: tx_data = "a"
+            3: tx_data = "t"
+            4: tx_data = "e"
+            5: tx_data = ":"
+            
+            7: bin2hex.bin = currState.q; tx_data = bin2hex.out;
+            8: tx_data = "\n"
+            9: tx_data  = "a"
+            10: tx_data = "s"
+            11: tx_data = "e"
+            12: tx_data = "l"
+            13: tx_data = ":"
+            
+            15: bin2hex.bin = asel_x.q; tx_data = bin2hex.out;
+            16: tx_data = "\n"
+            17: tx_data = "-"
+            18: tx_data = "-"
+            19: tx_data = "-"
+            20: tx_data = "-"
+            21: tx_data = "-"
+            22: tx_data = "-"
+            23: tx_data = "-"
+            24: tx_data = "-"
+            25: tx_data = "-"
+            26: tx_data = "-"
+            27: tx_data = "-"
+            28: tx_data = "-"
+            29: tx_data = "\n"
+            30: tx_data = "r"
+            31: tx_data = "0"
+            32: tx_data = ":"
+            
+            34: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
+            35: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
+            36: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
+            37: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
+            38: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
+            39: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
+            40: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
+            41: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
+            42: tx_data = "\n"
+            
+            43: tx_data = "="
+            44: tx_data = "="
+            45: tx_data = "="
+            46: tx_data = "="
+            47: tx_data = "="
+            48: tx_data = "="
+            49: tx_data = "="
+            50: tx_data = "="
+            51: tx_data = "="
+            52: tx_data = "="
+            53: tx_data = "="
+            54: tx_data = "="
+            55: tx_data = "\n"
+            56: tx_data = "\n"
+
+            default: bin2hex.bin = 0; tx_data = " "
+        }
+        
+        // State machine
         case (state.q) {
             States.MENU_START:
                 // NOP()
-                alufn = b000000
-                asel = 0
-                ra1 = b0000
-                ra2 = b0000
-                bsel = 0
-                we = 0
-                wa = 0
-                wdsel = 1
-                rxc = 0
+                alufn_x.d = b000000
+                asel_x.d = 0
+                ra1_x.d = b0000
+                ra2_x.d = b0000
+                bsel_x.d = 0
+                we_x.d = 0
+                wa_x.d = 0
+                wdsel_x.d = 1
+                rxc_x.d = 0
                 
                 // Debug stub and state transitions
                 count.d = 0
@@ -97,20 +200,42 @@ module control_unit (
                 RXC=0
                 */
                 
-                alufn = b011010
-                asel = 2
-                ra1 = bxxxx
-                ra2 = bxxxx
-                bsel = bxx
-                we = 1
-                wa = 0 // R0
-                wdsel = 0
-                rxc = 0
+                alufn_x.d = b011010
+                asel_x.d = 2 // set r0 to 1
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 0 // R0
+                wdsel_x.d = 0
+                rxc_x.d = 0
                 
                 // Debug stub and state transitions
                 count.d = 0
                 if (toPrintDebug.q) {
                     currState.d = States.GAME_START_1
+                    state.d = States.DEBUG
+                }
+                else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_START_2
+                }
+            
+            States.GAME_START_2:
+                alufn_x.d = b011010
+                asel_x.d = 1 // set r0 to 0
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 0 // R0
+                wdsel_x.d = 0
+                rxc_x.d = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_START_2
                     state.d = States.DEBUG
                 }
                 else if (action_btn) {
@@ -127,54 +252,8 @@ module control_unit (
 	                   if (count.q == BUFFER_LEN - 1) {
                         state.d = currState.q
                     }
-	               }
+	               }                
         }
         
-        // Serial debugger literals and data conversions
-        // Leave blank entry for space character
-        case (count.q) {
-            0: tx_data = "S"
-            1: tx_data = "t"
-            2: tx_data = "a"
-            3: tx_data = "t"
-            4: tx_data = "e"
-            5: tx_data = ":"
-            
-            7: bin2hex.bin = state.q; tx_data = bin2hex.out;
-            8: tx_data = "\n"
-            9: tx_data  = "a"
-            10: tx_data = "s"
-            11: tx_data = "e"
-            12: tx_data = "l"
-            13: tx_data = ":"
-            
-            //15: bin2hex.bin = asel; tx_data = bin2hex.out;
-            16: tx_data = "\n"
-            17: tx_data = "r"
-            18: tx_data = "0"
-            19: tx_data = ":"
-            
-            20: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
-            21: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
-            22: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
-            23: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
-            24: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
-            25: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
-            26: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
-            27: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
-            28: tx_data = "\n"
-            
-            29: tx_data = "="
-            30: tx_data = "="
-            31: tx_data = "="
-            32: tx_data = "="
-            33: tx_data = "="
-            34: tx_data = "="
-            35: tx_data = "="
-            36: tx_data = "\n"
-            37: tx_data = "\n"
-
-            default: bin2hex.bin = 0; tx_data = " "
-        }
     }
 }
