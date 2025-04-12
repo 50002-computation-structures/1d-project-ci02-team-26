@@ -154,6 +154,12 @@
                     "type": "DiskFile",
                     "path": "source/bin2hex.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "Component",
+                    "path": "Miscellaneous/counter.luc"
+                }
             }
         ],
         "constraintFiles": [

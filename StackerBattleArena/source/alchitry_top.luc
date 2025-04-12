@@ -16,7 +16,7 @@ module alchitry_top (
     alu alu()
     control_unit control_unit(.clk(clk), .rst(rst))
     
-    const CLK_FREQ = $is_sim() ? 1000 : 25_000_000
+    const CLK_FREQ = $is_sim() ? 1000 : 10_000_000
 
     .clk(clk) {
         // The reset conditioner is used to synchronize the reset signal to the FPGA
