@@ -501,14 +501,15 @@ module control_unit (
                     currState.d = States.GAME_SHFT_BLK_07
                     state.d = States.DEBUG
                 } else {
+                    toPrintDebug.d = DEBUG_ENABLED
                     case (shift_ok) {
                         b1000: // ok to shift left
                             state.d = States.GAME_SHFT_BLK2_08
                         b0100: // ok to shift right
                             state.d = States.GAME_SHFT_BLK3_09
-                        bxx10: // not ok to shift left, change to shift right
+                        b0010: // not ok to shift left, change to shift right
                             state.d = States.GAME_STORE1_11
-                        bxx01: // not ok to shift right, change to shift left
+                        b0001: // not ok to shift right, change to shift left
                             state.d = States.GAME_STORE2_12
                         // default is intentionally omitted as the program should hang here for debug if weird things happen
                     }
@@ -615,7 +616,74 @@ module control_unit (
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_IDLE_06
                 }
+            
+            States.GAME_STORE1_11:
+                // STORE_LITERAL(ASEL = 2, WA = R3)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b011010
+                asel_x.d = 2 // set R3, the direction bit to 1 (shift right)
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 3 // R3
+                wdsel_x.d = 0
+                rxc_x.d = 0
                 
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_STORE1_11
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_IDLE_06
+                }
+                
+            States.GAME_STORE2_12:
+                // STORE_LITERAL(ASEL = 1, WA = R3)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b011010
+                asel_x.d = 1 // set R3, the direction bit to 0 (shift left)
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 3 // R3
+                wdsel_x.d = 0
+                rxc_x.d = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_STORE2_12
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_IDLE_06
+                }
             
             States.DEBUG:
                 // print out all control signals within here and jump back to the original state
@@ -626,7 +694,7 @@ module control_unit (
 	                   if (count.q == BUFFER_LEN - 1) {
                         state.d = currState.q
                     }
-	               }       
+	               }
             
             default:
                 alufn_x.d = b000000
