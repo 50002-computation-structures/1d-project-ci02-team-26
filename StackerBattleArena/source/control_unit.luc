@@ -481,6 +481,9 @@ module control_unit (
                 else if (clk_oscillate) {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_SHFT_BLK_07
+                } else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_ACTION_18
                 }
             
             States.GAME_SHFT_BLK_07:

@@ -66,12 +66,10 @@ module alchitry_top (
         io_led[0] = regfile.r1[7:0]  // temporarily use r1 as it reflects the internal state without the display buffer :)
         io_led[1] = regfile.rx[0][15:8]
         io_led[2] = regfile.rx[0][23:16]
-        led[0] = clocks.clk_game
-        led[1] = clocks.clk_oscillate
         
         // Control Unit!!
         if (io_dip[0][0]) {
-            // If first dip switch is activated, use real clock
+            // If first dip switch is activated, use real clock. Note that these clocks are only the rising edges!
             control_unit.clk_game = clocks.clk_game
             control_unit.clk_oscillate = clocks.clk_oscillate
         } else {
