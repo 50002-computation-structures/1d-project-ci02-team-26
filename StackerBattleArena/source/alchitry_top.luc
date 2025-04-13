@@ -12,7 +12,7 @@ module alchitry_top (
 ) {
 
     sig rst                 // reset signal
-        
+    
     alu alu()
     control_unit control_unit(.clk(clk), .rst(rst))
     
@@ -62,15 +62,16 @@ module alchitry_top (
         usb_tx = tx.tx
         
         // Debug LEDs
-        //io_led[0] = regfile.rx[0][7:0]
-        io_led[0] = regfile.r1[7:0]  // temporarily use r1 as it reflects the internal state without the display buffer :)
+        io_led[0] = regfile.rx[0][7:0]
+        //io_led[0] = regfile.r1[7:0]  // temporarily use r1 as it reflects the internal state without the display buffer :)
         io_led[1] = regfile.rx[0][15:8]
         io_led[2] = regfile.rx[0][23:16]
         
         // Control Unit!!
         if (io_dip[0][0]) {
             // If first dip switch is activated, use real clock. Note that these clocks are only the rising edges!
-            control_unit.clk_game = clocks.clk_game
+            //control_unit.clk_game = clocks.clk_game
+            control_unit.clk_game = clkgame_btn_edge.out
             control_unit.clk_oscillate = clocks.clk_oscillate
         } else {
             control_unit.clk_game = clkgame_btn_edge.out
@@ -103,6 +104,7 @@ module alchitry_top (
             1: alu.b = 32h00000000
             2: alu.b = 32h00000001
             3: alu.b = control_unit.rowshft
+            4: alu.b = control_unit.rowreg
             default: alu.b = 0
         }
         

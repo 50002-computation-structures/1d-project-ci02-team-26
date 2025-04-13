@@ -8,6 +8,9 @@ module control_unit (
     input action_btn,    // Action button that is already debounced and rising edge only
     input shift_ok[4],   // special 4-bit indicator to indicate at what point are the squares ok to shift on the screen
     output rowshft[6],   // combinational output of how many rows to shift for display buffer
+    output rowreg[5],    // combinational output of the correct row register for a specific row in the display buffer. 
+                         // NOTE: Please check regfile for the correct mapping of display registers!!!!
+    output rowmask[32],
     output rxc,          // display buffer clear
     output ra1[4],       // register read address 1
     output ra2[4],       // register read address 2
@@ -15,7 +18,7 @@ module control_unit (
     output we,           // register write enable
     output alufn[6],     // ALU function
     output asel[3],
-    output bsel[2],
+    output bsel[3],
     output wdsel,
     
     // Serial port
@@ -56,14 +59,14 @@ module control_unit (
         
         DEBUG
     }
+
+    sig rowshft_x[6]
+    sig rowreg_x[4]
     
     // Serial debugger
-    const BUFFER_LEN = 129
+    const BUFFER_LEN = 149
     const DEBUG_ENABLED = 1
     bin_to_hex_ascii bin2hex()
-    
-    // Signals
-    sig rowreg[3]
     
     .clk(clk) {
         .rst(rst) {
@@ -74,7 +77,7 @@ module control_unit (
             // Output registers
             dff alufn_x[6](#INIT(0))
             dff asel_x[3](#INIT(0))
-            dff bsel_x[2](#INIT(0))
+            dff bsel_x[3](#INIT(0))
             dff wa_x[4](#INIT(0))
             dff we_x(#INIT(0))
             dff wdsel_x(#INIT(0))
@@ -105,9 +108,38 @@ module control_unit (
         wdsel_x.d = wdsel_x.q
         rxc_x.d = rxc_x.q
         
-        // TODO: implement combinational ROWSHFT and ROWREG logic
-        rowshft = 0
-        rowreg = 0
+        // LUT for ROWSHFT and ROWREG logic
+        // transform R0 row height register into the correct display buffer register
+        case (r0) {
+            default: rowreg_x = 8; rowshft_x = 0
+            1: rowreg_x = 8; rowshft_x = 0 //NOTE: row height of 1 is the real first row, as our rows are 1-indexed
+            2: rowreg_x = 8; rowshft_x = 8
+            3: rowreg_x = 8; rowshft_x = 16
+            4: rowreg_x = 8; rowshft_x = 24
+            5: rowreg_x = 9; rowshft_x = 0
+            6: rowreg_x = 9; rowshft_x = 8
+            7: rowreg_x = 9; rowshft_x = 16
+            8: rowreg_x = 9; rowshft_x = 24
+            9: rowreg_x = 10; rowshft_x = 0
+            10: rowreg_x = 10; rowshft_x = 8
+            11: rowreg_x = 10; rowshft_x = 16
+            12: rowreg_x = 10; rowshft_x = 24
+            13: rowreg_x = 11; rowshft_x = 0
+            14: rowreg_x = 11; rowshft_x = 8
+            15: rowreg_x = 11; rowshft_x = 16
+            16: rowreg_x = 11; rowshft_x = 24
+        }
+        rowshft = rowshft_x
+        rowreg = rowreg_x
+
+        // LUT for ROWMASK logic
+        case (rowshft_x) {
+            0: rowmask = h000000FF
+            8: rowmask = h0000FF00
+            16: rowmask = h00FF0000
+            24: rowmask = hFF000000
+            default: rowmask = 0
+        }
         
         // Wiring outputs
         asel = asel_x.q
@@ -201,60 +233,82 @@ module control_unit (
             72: bin2hex.bin = alufn_x.q[5:4]; tx_data = bin2hex.out;
             73: bin2hex.bin = alufn_x.q[3:0]; tx_data = bin2hex.out;
             74: tx_data = "\n"
-            75: tx_data = "-"
-            76: tx_data = "-"
-            77: tx_data = "-"
-            78: tx_data = "-"
-            79: tx_data = "-"
-            80: tx_data = "-"
-            81: tx_data = "-"
-            82: tx_data = "-"
-            83: tx_data = "-"
-            84: tx_data = "-"
-            85: tx_data = "-"
-            86: tx_data = "-"
-            87: tx_data = "\n"
-            88: tx_data = "r"
-            89: tx_data = "0"
-            90: tx_data = ":"
+            75: tx_data = "r"
+            76: tx_data = "o"
+            77: tx_data = "w"
+            78: tx_data = "r"
+            79: tx_data = "e"
+            80: tx_data = "g"
+            81: tx_data = ":"
             
-            92: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
-            93: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
-            94: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
-            95: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
-            96: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
-            97: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
-            98: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
-            99: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
-            100: tx_data = "\n"
-            101: tx_data = "r"
-            102: tx_data = "d"
-            103: tx_data = "1"
-            104: tx_data = ":"
+            83: bin2hex.bin = rowreg_x; tx_data = bin2hex.out;
+            84: tx_data = "\n"
+            85: tx_data = "r"
+            86: tx_data = "o"
+            87: tx_data = "w"
+            88: tx_data = "s"
+            89: tx_data = "h"
+            90: tx_data = "f"
+            91: tx_data = "t"
+            92: tx_data = ":"
             
-            106: bin2hex.bin = rd1[31:28]; tx_data = bin2hex.out;
-            107: bin2hex.bin = rd1[27:24]; tx_data = bin2hex.out;
-            108: bin2hex.bin = rd1[23:20]; tx_data = bin2hex.out;
-            109: bin2hex.bin = rd1[19:16]; tx_data = bin2hex.out;
-            110: bin2hex.bin = rd1[15:12]; tx_data = bin2hex.out;
-            111: bin2hex.bin = rd1[11:8]; tx_data = bin2hex.out;
-            112: bin2hex.bin = rd1[7:4]; tx_data = bin2hex.out;
-            113: bin2hex.bin = rd1[3:0]; tx_data = bin2hex.out;
-            114: tx_data = "\n"
-            115: tx_data = "="
-            116: tx_data = "="
-            117: tx_data = "="
-            118: tx_data = "="
-            119: tx_data = "="
-            120: tx_data = "="
-            121: tx_data = "="
-            122: tx_data = "="
-            123: tx_data = "="
-            124: tx_data = "="
-            125: tx_data = "="
-            126: tx_data = "="
-            127: tx_data = "\n"
-            128: tx_data = "\n"
+            94: bin2hex.bin = rowshft_x[5:4]; tx_data = bin2hex.out;
+            95: bin2hex.bin = rowshft_x[3:0]; tx_data = bin2hex.out;
+            
+            96: tx_data = "\n"
+            97: tx_data = "-"
+            98: tx_data = "-"
+            99: tx_data = "-"
+            100: tx_data = "-"
+            101: tx_data = "-"
+            102: tx_data = "-"
+            103: tx_data = "-"
+            104: tx_data = "-"
+            105: tx_data = "-"
+            106: tx_data = "-"
+            107: tx_data = "-"
+            108: tx_data = "\n"
+            109: tx_data = "r"
+            110: tx_data = "0"
+            111: tx_data = ":"
+            
+            113: bin2hex.bin = r0[31:28]; tx_data = bin2hex.out;
+            114: bin2hex.bin = r0[27:24]; tx_data = bin2hex.out;
+            115: bin2hex.bin = r0[23:20]; tx_data = bin2hex.out;
+            116: bin2hex.bin = r0[19:16]; tx_data = bin2hex.out;
+            117: bin2hex.bin = r0[15:12]; tx_data = bin2hex.out;
+            118: bin2hex.bin = r0[11:8]; tx_data = bin2hex.out;
+            119: bin2hex.bin = r0[7:4]; tx_data = bin2hex.out;
+            120: bin2hex.bin = r0[3:0]; tx_data = bin2hex.out;
+            121: tx_data = "\n"
+            122: tx_data = "r"
+            123: tx_data = "d"
+            124: tx_data = "1"
+            125: tx_data = ":"
+            
+            127: bin2hex.bin = rd1[31:28]; tx_data = bin2hex.out;
+            128: bin2hex.bin = rd1[27:24]; tx_data = bin2hex.out;
+            129: bin2hex.bin = rd1[23:20]; tx_data = bin2hex.out;
+            130: bin2hex.bin = rd1[19:16]; tx_data = bin2hex.out;
+            131: bin2hex.bin = rd1[15:12]; tx_data = bin2hex.out;
+            132: bin2hex.bin = rd1[11:8]; tx_data = bin2hex.out;
+            133: bin2hex.bin = rd1[7:4]; tx_data = bin2hex.out;
+            134: bin2hex.bin = rd1[3:0]; tx_data = bin2hex.out;
+            135: tx_data = "\n"
+            136: tx_data = "="
+            137: tx_data = "="
+            138: tx_data = "="
+            139: tx_data = "="
+            140: tx_data = "="
+            141: tx_data = "="
+            142: tx_data = "="
+            143: tx_data = "="
+            144: tx_data = "="
+            145: tx_data = "="
+            146: tx_data = "="
+            147: tx_data = "="
+            148: tx_data = "\n"
+            149: tx_data = "\n"
 
             default: bin2hex.bin = 0; tx_data = " "
         }
@@ -263,13 +317,13 @@ module control_unit (
         case (state.q) {
             States.MENU_START_00:
                 // NOP()
-                alufn_x.d = b000000
-                asel_x.d = 0
-                ra1_x.d = b0000
-                ra2_x.d = b0000
-                bsel_x.d = 0
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
                 we_x.d = 0
-                wa_x.d = 0
+                wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 0
                 
@@ -458,13 +512,13 @@ module control_unit (
             
             States.GAME_IDLE_06:
                 // NOP()
-                alufn_x.d = b000000
-                asel_x.d = 0
-                ra1_x.d = b0000
-                ra2_x.d = b0000
-                bsel_x.d = 0
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
                 we_x.d = 0
-                wa_x.d = 0
+                wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 0
                 
@@ -488,13 +542,13 @@ module control_unit (
             
             States.GAME_SHFT_BLK_07:
                 // NOP()
-                alufn_x.d = b000000
-                asel_x.d = 0
-                ra1_x.d = b0000
-                ra2_x.d = b0000
-                bsel_x.d = 0
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
                 we_x.d = 0
-                wa_x.d = 0
+                wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 0
                 
@@ -687,7 +741,169 @@ module control_unit (
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_IDLE_06
                 }
+
+            States.GAME_DRAW1_13:
+                // SHIFT(ALUFN=SHL, RA1=R1, BSEL=3)	// shift the current row in R1 based on ROWSHFT (BSEL=3), and store result in R4 scratch register
+                /*
+                    ALUFN = SHL/SHR	(either shift left or right)
+                    ASEL = 0		(RD1)
+                    RA1 = RA1
+                    RA2 = x
+                    BSEL = BSEL
+                    WE = 1		(enable write to RegFile)
+                    WA = R4
+                    WDSEL = 0		(ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b100000 // SHL R1 by ROWSHFT and store result into R4
+                asel_x.d = 0
+                ra1_x.d = 1  // R1
+                ra2_x.d = 0
+                bsel_x.d = 3 // use ROWSHFT input
+                we_x.d = 1
+                wa_x.d = 4 // R4
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_DRAW1_13
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_DRAW2_14
+                }
+
+            States.GAME_DRAW2_14:
+                // XOR (R4,ROWREG,R5)
+                // XOR the results of the current row register and the shifted result in the R4 scratch register, 
+                // and place it in the R5 scratch register. Equivalent to (x ^ y)
+                /*
+                    XOR (RA, RB, RC)
+                    ALUFN = "XOR"  
+                    ASEL = 0       
+                    RA1 = RA     
+                    RA2 = RB    
+                    BSEL = 0
+                    WE = 1
+                    WA = RC       
+                    WDSEL = 0      
+                    RXC=0                
+                */
+                alufn_x.d = b010110 // XOR R4 and ROWREG, place result in R5
+                asel_x.d = 0
+                ra1_x.d = 4  // R4
+                ra2_x.d = rowreg_x
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 5 // R5
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_DRAW2_14
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_DRAW3_15
+                }
+
+            States.GAME_DRAW3_15:
+                // AND (R5, ROWMASK, R4)	// Equivalent to ((x ^ y) & m). Result stored in R4
+                /*
+                    ALUFN = "AND"
+                    ASEL = 0
+                    RA1 = RA
+                    RA2 = RB
+                    BSEL = 0
+                    WE = 1
+                    WA = RC
+                    WDSEL = 0
+                    RXC=0
+                */
+                alufn_x.d = b011000 // AND R5 and ROWMASK, place result in R4
+                asel_x.d = 0
+                ra1_x.d = 5  // R5
+                ra2_x.d = bxxxx
+                bsel_x.d = 5 // use ROWMASK input
+                we_x.d = 1
+                wa_x.d = 4 // R4
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_DRAW3_15
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_DRAW4_16
+                }
             
+            States.GAME_DRAW4_16:
+                // XOR (R4, ROWREG, R5)	//Equivalent to x ^ ((x ^ y) & m). Result stored in R5
+                alufn_x.d = b010110 // XOR R5 and ROWREG, place result in R4
+                asel_x.d = 0
+                ra1_x.d = 4  // R4
+                ra2_x.d = rowreg_x
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 5 // R5
+                wdsel_x.d = 0
+                rxc_x.d = 0
+                
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_DRAW4_16
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_DRAW5_17
+                }
+            
+            States.GAME_DRAW5_17:
+                // COPY_REG(R5, ROWREG)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = 0		(RD1)
+                    RA1 = RA
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = RB
+                    WDSEL = 0		(ALU output)
+                    RXC=0
+                */
+                alufn_x.d = b010110 // "A"
+                asel_x.d = 0
+                ra1_x.d = 5 // R5
+                ra2_x.d = bxxxx
+                bsel_x.d = bxxx
+                we_x.d = 1
+                wa_x.d = rowreg_x // write R5 to ROWREG
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_DRAW5_17
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_IDLE_06
+                }
+
             States.DEBUG:
                 // print out all control signals within here and jump back to the original state
                 toPrintDebug.d = 0
