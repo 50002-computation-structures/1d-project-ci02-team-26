@@ -713,7 +713,7 @@ module control_unit (
                 }
                 else {
                     toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_IDLE_06
+                    state.d = States.GAME_SHFT_BLK_07
                 }
                 
             States.GAME_STORE2_12:
@@ -747,7 +747,7 @@ module control_unit (
                 }
                 else {
                     toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_IDLE_06
+                    state.d = States.GAME_SHFT_BLK_07
                 }
 
             States.GAME_DRAW1_13:
