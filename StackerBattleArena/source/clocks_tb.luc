@@ -1,0 +1,29 @@
+testbench clocks_tb {
+    sig clk
+    sig rst
+    sig r0[32]
+    
+    clocks clockunit(.clk(clk), .rst(rst), .r0(r0), #OSC_DIVS(5), #GAME_DIVS(2))
+
+    fun tick_clock() {
+        clk = 1
+        $tick() // tick without capturing signals
+        clk = 0
+        $tick()
+    }
+
+    test myTest {
+        clk = 0 // initialize the value
+        rst = 0
+        r0 = 0
+        $tick() // capture initial state
+
+        // test goes here
+        repeat(i, 200) {
+            if (i > 100) {
+                r0 = 1
+            }
+            $tick_clock()
+        }
+    }
+}

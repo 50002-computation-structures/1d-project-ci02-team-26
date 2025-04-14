@@ -160,6 +160,12 @@
                     "type": "Component",
                     "path": "Miscellaneous/counter.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/clocks_tb.luc"
+                }
             }
         ],
         "constraintFiles": [

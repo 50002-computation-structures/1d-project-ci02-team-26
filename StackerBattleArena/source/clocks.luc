@@ -1,4 +1,7 @@
-module clocks (
+module clocks #(
+    OSC_DIVS = 25 : OSC_DIVS > 0,
+    GAME_DIVS = 22 : GAME_DIVS > 0
+) (
     input clk,  // master clock from the FPGA itself
     input rst,
     input r0[32],
@@ -11,12 +14,12 @@ module clocks (
         }
         
         edge_detector osc_clk_edge(#RISE(1), #FALL(0))
-        edge_detector game_clk_edge(#RISE(1), #FALL(0))
+        edge_detector game_clk_edge(#RISE(0), #FALL(1))
     }
     
     always {
-        osc_clk_edge.in = divided_clock.value[25 - r0] // clock used to oscillate the blocks. 10MHz / 2^21 gives 4.7Hz, down to 10MHz/2^6=156kHz
-        game_clk_edge.in = divided_clock.value[22 - r0] // clock used to refresh the display
+        osc_clk_edge.in = divided_clock.value[OSC_DIVS - r0] // clock used to oscillate the blocks. 10MHz / 2^21 gives 4.7Hz, down to 10MHz/2^6=156kHz
+        game_clk_edge.in = divided_clock.value[OSC_DIVS - r0] // clock used to refresh the display
         // 24 - r0 to obtain the correct oscillation frequency of the blocks based on row height
         
         clk_game = game_clk_edge.out
