@@ -27,11 +27,13 @@ module control_unit (
     input tx_busy      // TX is busy flag
 ) {
     // ALUFN aliases to prevent mistakes
+    const ALU_ADD = b000000
     const ALU_AND = b011000
     const ALU_XOR = b010110
     const ALU_A = b011010
     const ALU_SHL = b100000
     const ALU_SHR = b100001
+    const ALU_CMPEQ = b110011
 
     // State Machine
     enum States {
@@ -63,6 +65,12 @@ module control_unit (
         GAME_ACTION3_20,
         GAME_ACTION4_21,
         GAME_ACTION5_22,
+
+        GAME_ACTION6_23,
+        GAME_ACTION7_24,
+
+        MENU_GOVER,
+        MENU_PRIZE,
         
         DEBUG
     }
@@ -80,7 +88,8 @@ module control_unit (
             dff toPrintDebug(#INIT(DEBUG_ENABLED)) // 1 means need to print debug statement. debug should only be printed once per state!
             dff state[$width(States)](#INIT(States.MENU_START_00)) // actual state
             dff currState[$width(States)](#INIT(States.MENU_START_00)) // current state (without debug transitions)
-            
+            dff actionBtnPressed(#INIT(0))
+
             // Output registers
             dff alufn_x[6](#INIT(0))
             dff asel_x[3](#INIT(0))
@@ -114,6 +123,7 @@ module control_unit (
         bsel_x.d = bsel_x.q
         wdsel_x.d = wdsel_x.q
         rxc_x.d = rxc_x.q
+        actionBtnPressed.d = actionBtnPressed.q
         
         // LUT for ROWSHFT and ROWREG logic
         // transform R0 row height register into the correct display buffer register
@@ -856,7 +866,7 @@ module control_unit (
                 }
             
             States.GAME_DRAW4_16:
-                // XOR (R4, ROWREG, R5)	//Equivalent to x ^ ((x ^ y) & m). Result stored in R5
+                // XOR (R4, R2, R5)	//Equivalent to x ^ ((x ^ y) & m). Result stored in R5
                 alufn_x.d = ALU_XOR // XOR R2 and ROWREG, place result in R5
                 asel_x.d = 0
                 ra1_x.d = 2  // R2
@@ -909,6 +919,207 @@ module control_unit (
                 }
                 else {
                     toPrintDebug.d = DEBUG_ENABLED
+                    if (actionBtnPressed.q) {
+                        state.d = States.GAME_ACTION6_23
+                    } else {
+                        state.d = States.GAME_IDLE_06
+                    }
+                }
+
+            States.GAME_ACTION_18:
+                // AND (RA=R1, RB=R6, RC=R4)
+                alufn_x.d = ALU_AND // AND R1 and R6, place result in R4
+                asel_x.d = 0
+                ra1_x.d = 1
+                ra2_x.d = 6
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 4
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Set actionBtnPressed so the draw states will go to GAME_ACTION6 state by the end
+                actionBtnPressed.d = 1
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION_18
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_ACTION2_19
+                }
+
+            States.GAME_ACTION2_19:
+                // CMPEQ_LITERAL(RA=R4, BSEL=1, RC=R5): compare R4 == 0. Result stored in R5. 
+                // Keep in mind that this is a comparison against 0, so R5=1 if R4==0
+                alufn_x.d = ALU_CMPEQ // CMPEQ R4 and 0, place result in R5
+                asel_x.d = 0
+                ra1_x.d = 4
+                ra2_x.d = bxxxx
+                bsel_x.d = 1
+                we_x.d = 1
+                wa_x.d = 5
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION2_19
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_ACTION3_20
+                }
+
+            States.GAME_ACTION3_20:
+                // LDREG_RD1 (RA1=R5) 
+                // show the result of the comparison on the RD1 bus,
+                // and a multiplexer will do the branching logic
+                /*
+                    ALUFN = x
+                    ASEL = x
+                    RA1 = RA1
+                    RA2 = x
+                    BSEL = x
+                    WE = 0		(disable write to RegFile)
+                    WA = x
+                    WDSEL = x
+                    RXC=0
+                */
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = 5 // Show R5 on the RD1 bus
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
+                we_x.d = 0
+                wa_x.d = bxxxx
+                wdsel_x.d = bx
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION3_20
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    if (rd1 == 1) {
+                        // -> MENU_GOVER
+                        state.d = States.MENU_GOVER
+                    } else {
+                        if (r0 == 15) {
+                            // Game is done and user won major prize!
+                            // -> MENU_PRIZE
+                            state.d = States.MENU_PRIZE
+                        } else {
+                            // Game not done yet
+                            // -> GAME_ACTION4
+                            state.d = States.GAME_ACTION4_21
+                        }
+                    }
+                }
+
+            States.GAME_ACTION4_21:
+                // COPY_REG(R4, R1)	// Copy the truncated register back to R1, the current row register
+                alufn_x.d = ALU_A // "A"
+                asel_x.d = 0
+                ra1_x.d = 4 // R4
+                ra2_x.d = bxxxx
+                bsel_x.d = bxxx
+                we_x.d = 1
+                wa_x.d = 1 // R1
+                wdsel_x.d = 0
+                rxc_x.d = 0
+                // -> GAME_ACTION5
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION4_21
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_ACTION5_22
+                }
+
+            States.GAME_ACTION5_22:
+                // COPY_REG(R4, R6)	// Copy the truncated register to R6, 
+                // the previous row register so the next row can compare against it
+                alufn_x.d = ALU_A // "A"
+                asel_x.d = 0
+                ra1_x.d = 4 // R4
+                ra2_x.d = bxxxx
+                bsel_x.d = bxxx
+                we_x.d = 1
+                wa_x.d = 6 // R6
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION5_22
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_DRAW1_13
+                }
+
+            States.GAME_ACTION6_23:
+                // ADD_1(R0, R4)	// Increment R0 row height counter and save into R4
+                alufn_x.d = ALU_ADD
+                asel_x.d = 0
+                ra1_x.d = 0
+                ra2_x.d = bxxxx
+                bsel_x.d = 2 // 1 literal
+                we_x.d = 1
+                wa_x.d = 4
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Reset action button pressed flag
+                actionBtnPressed.d = 0
+                // -> GAME_ACTION7
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION6_23
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_ACTION7_24
+                }
+
+            States.GAME_ACTION7_24:
+                // COPY_REG(R4, R0)	 Copy the result back to R0
+                alufn_x.d = ALU_A // "A"
+                asel_x.d = 0
+                ra1_x.d = 4 // R4
+                ra2_x.d = bxxxx
+                bsel_x.d = bxxx
+                we_x.d = 1
+                wa_x.d = 0 // R0
+                wdsel_x.d = 0
+                rxc_x.d = 0
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_ACTION7_24
+                    state.d = States.DEBUG
+                }
+                else {
+                    toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_IDLE_06
                 }
 
@@ -916,12 +1127,12 @@ module control_unit (
                 // print out all control signals within here and jump back to the original state
                 toPrintDebug.d = 0
                 if (!tx_busy) {
-	                   count.d = count.q + 1
-	                   new_tx = 1
-	                   if (count.q == BUFFER_LEN - 1) {
+                    count.d = count.q + 1
+                    new_tx = 1
+                    if (count.q == BUFFER_LEN - 1) {
                         state.d = currState.q
                     }
-	               }
+                }
             
             default:
                 alufn_x.d = b000000

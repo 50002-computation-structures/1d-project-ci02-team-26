@@ -47,6 +47,7 @@ module alu_manual_tester#(
         // 0x20 100000: Bit shift left
         // 0x21 100001: Bit shift right
         // 0x23 100011: Bit shift right with sign extension
+        // 0x33 110011: compare equals
         
         // IO shield LED outputs: ALU Out, B, A, with 1 MSB and 7 LSBs
         io_led = {c{alu.out[31], alu.out[6:0]}, c{b[31], b[6:0]}, c{a[31], a[6:0]}}
