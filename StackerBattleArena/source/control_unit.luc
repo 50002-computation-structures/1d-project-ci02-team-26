@@ -761,7 +761,9 @@ module control_unit (
                 }
 
             States.GAME_DRAW1_13:
-                // SHIFT(ALUFN=SHL, RA1=R1, BSEL=3)	// shift the current row in R1 based on ROWSHFT (BSEL=3), and store result in R4 scratch register
+                // SHIFT(ALUFN=SHL, RA1=R1, BSEL=3)	
+                // shift the current row in R1 based on ROWSHFT (BSEL=3), 
+                // and store result in R4 scratch register
                 /*
                     ALUFN = SHL/SHR	(either shift left or right)
                     ASEL = 0		(RD1)
@@ -866,11 +868,11 @@ module control_unit (
                 }
             
             States.GAME_DRAW4_16:
-                // XOR (R4, R2, R5)	//Equivalent to x ^ ((x ^ y) & m). Result stored in R5
+                // XOR (ROWREG, R2, R5)	//Equivalent to x ^ ((x ^ y) & m). Result stored in R5
                 alufn_x.d = ALU_XOR // XOR R2 and ROWREG, place result in R5
                 asel_x.d = 0
-                ra1_x.d = 2  // R2
-                ra2_x.d = 4  // R4
+                ra1_x.d = rowreg_x  // ROWREG
+                ra2_x.d = 2  // R2
                 bsel_x.d = 0
                 we_x.d = 1
                 wa_x.d = 5 // R5

@@ -105,6 +105,7 @@ module alchitry_top (
             2: alu.b = 32h00000001
             3: alu.b = control_unit.rowshft
             4: alu.b = control_unit.rowreg
+            5: alu.b = control_unit.rowmask
             default: alu.b = 0
         }
         
