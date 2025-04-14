@@ -27,7 +27,6 @@ module control_unit (
     input tx_busy      // TX is busy flag
 ) {
     // ALUFN aliases to prevent mistakes
-    const ALU_ADD = 0
     const ALU_AND = b011000
     const ALU_XOR = b010110
     const ALU_A = b011010
@@ -362,9 +361,9 @@ module control_unit (
                 
                 alufn_x.d = ALU_A
                 asel_x.d = 2 // set r0 to 1
-                ra1_x.d = 0
-                ra2_x.d = 0
-                bsel_x.d = 0
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
                 we_x.d = 1
                 wa_x.d = 0 // R0
                 wdsel_x.d = 0
@@ -536,14 +535,15 @@ module control_unit (
                     currState.d = States.GAME_IDLE_06
                     state.d = States.DEBUG
                 }
+                else if (clk_oscillate) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_SHFT_BLK_07
+                }
                 else if (clk_game) {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_DRAW1_13
                 }
-                else if (clk_oscillate) {
-                    toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_SHFT_BLK_07
-                } else if (action_btn) {
+                else if (action_btn) {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_ACTION_18
                 }

@@ -7,18 +7,17 @@ module clocks (
 ) {
     .clk(clk) {
         .rst(rst) {
-            counter game_clock(#SIZE(15))      // clock used to refresh the display, optimally 200Hz but is currently 305Hz
-            counter oscillate_clock(#SIZE(25)) // clock used to oscillate the blocks. 10MHz / 2^25 gives 0.6Hz
+            counter divided_clock(#SIZE(30)) 
         }
         
-        edge_detector game_clk_edge(#RISE(1), #FALL(0))
         edge_detector osc_clk_edge(#RISE(1), #FALL(0))
+        edge_detector game_clk_edge(#RISE(1), #FALL(0))
     }
     
     always {
-        game_clk_edge.in = game_clock.value[14]
-        // 25 - r0 to obtain the correct oscillation frequency of the blocks based on row height
-        osc_clk_edge.in = oscillate_clock.value[24 - r0]
+        osc_clk_edge.in = divided_clock.value[25 - r0] // clock used to oscillate the blocks. 10MHz / 2^21 gives 4.7Hz, down to 10MHz/2^6=156kHz
+        game_clk_edge.in = divided_clock.value[22 - r0] // clock used to refresh the display
+        // 24 - r0 to obtain the correct oscillation frequency of the blocks based on row height
         
         clk_game = game_clk_edge.out
         clk_oscillate = osc_clk_edge.out
