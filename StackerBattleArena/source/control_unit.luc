@@ -26,6 +26,14 @@ module control_unit (
     output tx_data[8], // TX data
     input tx_busy      // TX is busy flag
 ) {
+    // ALUFN aliases to prevent mistakes
+    const ALU_ADD = 0
+    const ALU_AND = b011000
+    const ALU_XOR = b010110
+    const ALU_A = b011010
+    const ALU_SHL = b100000
+    const ALU_SHR = b100001
+
     // State Machine
     enum States {
         MENU_START_00, 
@@ -352,7 +360,7 @@ module control_unit (
                     RXC=0
                 */
                 
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 2 // set r0 to 1
                 ra1_x.d = 0
                 ra2_x.d = 0
@@ -386,7 +394,7 @@ module control_unit (
                     RXC=0
                 */
                 
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 3 // set r1 to 0xf
                 ra1_x.d = 0
                 ra2_x.d = 0
@@ -455,7 +463,7 @@ module control_unit (
                     WDSEL = 0		(write from ALU output)
                     RXC=0
                 */
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 3 // set r8 / rx0 to 0xf
                 ra1_x.d = 0
                 ra2_x.d = 0
@@ -489,7 +497,7 @@ module control_unit (
                     WDSEL = 0		(write from ALU output)
                     RXC=0
                 */
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 4 // set r6 to 0xff
                 ra1_x.d = 0
                 ra2_x.d = 0
@@ -585,7 +593,7 @@ module control_unit (
                     WDSEL = 0		(ALU output)
                     RXC=0
                 */
-                alufn_x.d = b100000 // SHL
+                alufn_x.d = ALU_SHL // SHL
                 asel_x.d = 0
                 ra1_x.d = 1
                 ra2_x.d = bxxxx
@@ -619,7 +627,7 @@ module control_unit (
                     WDSEL = 0		(ALU output)
                     RXC=0
                 */
-                alufn_x.d = b100001 // SHR
+                alufn_x.d = ALU_SHR // SHR
                 asel_x.d = 0
                 ra1_x.d = 1
                 ra2_x.d = bxxxx
@@ -653,7 +661,7 @@ module control_unit (
                     WDSEL = 0		(ALU output)
                     RXC=0
                 */
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 0
                 ra1_x.d = 4
                 ra2_x.d = bxxxx
@@ -687,7 +695,7 @@ module control_unit (
                     WDSEL = 0		(write from ALU output)
                     RXC=0
                 */
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 2 // set R3, the direction bit to 1 (shift right)
                 ra1_x.d = 0
                 ra2_x.d = 0
@@ -721,7 +729,7 @@ module control_unit (
                     WDSEL = 0		(write from ALU output)
                     RXC=0
                 */
-                alufn_x.d = b011010
+                alufn_x.d = ALU_A
                 asel_x.d = 1 // set R3, the direction bit to 0 (shift left)
                 ra1_x.d = 0
                 ra2_x.d = 0
@@ -755,7 +763,7 @@ module control_unit (
                     WDSEL = 0		(ALU output)
                     RXC=0
                 */
-                alufn_x.d = b100000 // SHL R1 by ROWSHFT and store result into R4
+                alufn_x.d = ALU_SHL // SHL R1 by ROWSHFT and store result into R4
                 asel_x.d = 0
                 ra1_x.d = 1  // R1
                 ra2_x.d = 0
@@ -779,20 +787,20 @@ module control_unit (
             States.GAME_DRAW2_14:
                 // XOR (R4,ROWREG,R5)
                 // XOR the results of the current row register and the shifted result in the R4 scratch register, 
-                // and place it in the R5 scratch register. Equivalent to (x ^ y)
+                // and place it in the R5 scratch register. Equivalent to (x ^ y) : (ROWREG ^ R4) -> R5
                 /*
                     XOR (RA, RB, RC)
                     ALUFN = "XOR"  
-                    ASEL = 0       
-                    RA1 = RA     
-                    RA2 = RB    
+                    ASEL = 0
+                    RA1 = RA
+                    RA2 = RB
                     BSEL = 0
                     WE = 1
                     WA = RC       
-                    WDSEL = 0      
-                    RXC=0                
+                    WDSEL = 0
+                    RXC=0
                 */
-                alufn_x.d = b010110 // XOR R4 and ROWREG, place result in R5
+                alufn_x.d = ALU_XOR // XOR R4 and ROWREG, place result in R5
                 asel_x.d = 0
                 ra1_x.d = 4  // R4
                 ra2_x.d = rowreg_x
@@ -814,7 +822,7 @@ module control_unit (
                 }
 
             States.GAME_DRAW3_15:
-                // AND (R5, ROWMASK, R4)	// Equivalent to ((x ^ y) & m). Result stored in R4
+                // AND (R5, ROWMASK, R2)	// Equivalent to ((x ^ y) & m). Result stored in R2
                 /*
                     ALUFN = "AND"
                     ASEL = 0
@@ -826,13 +834,13 @@ module control_unit (
                     WDSEL = 0
                     RXC=0
                 */
-                alufn_x.d = b011000 // AND R5 and ROWMASK, place result in R4
+                alufn_x.d = ALU_AND // AND R5 and ROWMASK, place result in R2
                 asel_x.d = 0
                 ra1_x.d = 5  // R5
                 ra2_x.d = bxxxx
                 bsel_x.d = 5 // use ROWMASK input
                 we_x.d = 1
-                wa_x.d = 4 // R4
+                wa_x.d = 2 // R2
                 wdsel_x.d = 0
                 rxc_x.d = 0
 
@@ -849,10 +857,10 @@ module control_unit (
             
             States.GAME_DRAW4_16:
                 // XOR (R4, ROWREG, R5)	//Equivalent to x ^ ((x ^ y) & m). Result stored in R5
-                alufn_x.d = b010110 // XOR R5 and ROWREG, place result in R4
+                alufn_x.d = ALU_XOR // XOR R2 and ROWREG, place result in R5
                 asel_x.d = 0
-                ra1_x.d = 4  // R4
-                ra2_x.d = rowreg_x
+                ra1_x.d = 2  // R2
+                ra2_x.d = 4  // R4
                 bsel_x.d = 0
                 we_x.d = 1
                 wa_x.d = 5 // R5
@@ -883,7 +891,7 @@ module control_unit (
                     WDSEL = 0		(ALU output)
                     RXC=0
                 */
-                alufn_x.d = b010110 // "A"
+                alufn_x.d = ALU_A // "A"
                 asel_x.d = 0
                 ra1_x.d = 5 // R5
                 ra2_x.d = bxxxx

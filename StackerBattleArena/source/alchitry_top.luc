@@ -70,8 +70,8 @@ module alchitry_top (
         // Control Unit!!
         if (io_dip[0][0]) {
             // If first dip switch is activated, use real clock. Note that these clocks are only the rising edges!
-            //control_unit.clk_game = clocks.clk_game
-            control_unit.clk_game = clkgame_btn_edge.out
+            control_unit.clk_game = clocks.clk_game
+            //control_unit.clk_game = clkgame_btn_edge.out
             control_unit.clk_oscillate = clocks.clk_oscillate
         } else {
             control_unit.clk_game = clkgame_btn_edge.out
