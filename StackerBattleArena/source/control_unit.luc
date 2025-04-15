@@ -73,6 +73,8 @@ module control_unit (
 
         MENU_GOVER_25,
         MENU_PRIZE_26,
+
+        GAME_STARTX_1_27,
         
         DEBUG
     }
@@ -359,9 +361,80 @@ module control_unit (
                 else if (action_btn) {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_START_1_01
+                } else if (alt_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_STARTX_1_27
+                }
+
+            States.GAME_STARTX_1_27:
+                // STORE_LITERAL (ASEL=3, WA=R1)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                
+                alufn_x.d = ALU_A
+                asel_x.d = 2 // set r1 to 0x01 so there's only 1 block available to the player
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 1 // R1
+                wdsel_x.d = 0
+                rxc_x.d = 0
+              
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_STARTX_1_27
+                    state.d = States.DEBUG
+                } else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_START_2_02
                 }
                 
             States.GAME_START_1_01:
+                // STORE_LITERAL (ASEL=3, WA=R1)
+                /*
+                    ALUFN = “A”		(let ALU pass through input A to output)
+                    ASEL = ASEL
+                    RA1 = x
+                    RA2 = x
+                    BSEL = x
+                    WE = 1		(enable write to RegFile)
+                    WA = WA		(write to register defined by WA)
+                    WDSEL = 0		(write from ALU output)
+                    RXC=0
+                */
+                
+                alufn_x.d = ALU_A
+                asel_x.d = 3 // set r1 to 0xf
+                ra1_x.d = 0
+                ra2_x.d = 0
+                bsel_x.d = 0
+                we_x.d = 1
+                wa_x.d = 1 // R1
+                wdsel_x.d = 0
+                rxc_x.d = 0
+              
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.GAME_START_1_01
+                    state.d = States.DEBUG
+                } else {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_START_2_02
+                }
+            
+            States.GAME_START_2_02:
                 // STORE_LITERAL (ASEL=2, WA=R0)
                 /*
                     ALUFN = “A”		(let ALU pass through input A to output)
@@ -385,40 +458,6 @@ module control_unit (
                 wdsel_x.d = 0
                 rxc_x.d = 0
                 ledmode_x.d = 0
-                
-                // Debug stub and state transitions
-                count.d = 0
-                if (toPrintDebug.q) {
-                    currState.d = States.GAME_START_1_01
-                    state.d = States.DEBUG
-                } else {
-                    toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_START_2_02
-                }
-            
-            States.GAME_START_2_02:
-                // STORE_LITERAL (ASEL=3, WA=R1)
-                /*
-                    ALUFN = “A”		(let ALU pass through input A to output)
-                    ASEL = ASEL
-                    RA1 = x
-                    RA2 = x
-                    BSEL = x
-                    WE = 1		(enable write to RegFile)
-                    WA = WA		(write to register defined by WA)
-                    WDSEL = 0		(write from ALU output)
-                    RXC=0
-                */
-                
-                alufn_x.d = ALU_A
-                asel_x.d = 3 // set r1 to 0xf
-                ra1_x.d = 0
-                ra2_x.d = 0
-                bsel_x.d = 0
-                we_x.d = 1
-                wa_x.d = 1 // R1
-                wdsel_x.d = 0
-                rxc_x.d = 0
                 
                 // Debug stub and state transitions
                 count.d = 0
@@ -453,7 +492,7 @@ module control_unit (
                 we_x.d = 0
                 wa_x.d = bxxxx
                 wdsel_x.d = 1
-                rxc_x.d = 0
+                rxc_x.d = 1
             
                 // Debug stub and state transitions
                 count.d = 0
@@ -1021,7 +1060,6 @@ module control_unit (
                         // Game over
                         state.d = States.MENU_GOVER_25
                     } else {
-                        // TODO: modify this if you want to change the winning condition, such as introducing
                         // a minor prize screen
                         if (r0 == 15) {
                             // Game is done and user won major prize!

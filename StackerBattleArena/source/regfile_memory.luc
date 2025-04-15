@@ -70,10 +70,10 @@ module regfile_memory (
             rx[i] = registers.q[i+8]
         }
         
-        // Implementation of asynchronous reset for entire regfile
+        // Implementation of asynchronous reset for display buffer
         if (rxc)
         {
-            repeat (i, 12)
+            repeat (i, 4, 8) // 8,9,10,11 which are display registers
             {
                 registers.d[i] = 0
             }
