@@ -552,6 +552,10 @@ module control_unit (
                     currState.d = States.GAME_IDLE_06
                     state.d = States.DEBUG
                 }
+                else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.GAME_ACTION_18
+                }
                 else if (clk_oscillate) {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_SHFT_BLK_07
@@ -560,11 +564,6 @@ module control_unit (
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_DRAW1_13
                 }
-                else if (action_btn) {
-                    toPrintDebug.d = DEBUG_ENABLED
-                    state.d = States.GAME_ACTION_18
-                }
-            
             States.GAME_SHFT_BLK_07:
                 // NOP()
                 alufn_x.d = bxxxxxx

@@ -19,7 +19,7 @@ testbench clocks_tb {
         $tick() // capture initial state
 
         // test goes here
-        repeat(i, 200) {
+        repeat(i, 1000) {
             if (i > 100) {
                 r0 = 1
             }

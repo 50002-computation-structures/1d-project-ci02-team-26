@@ -10,17 +10,34 @@ module clocks #(
 ) {
     .clk(clk) {
         .rst(rst) {
-            counter divided_clock(#SIZE(30)) 
+            counter divided_clock(#SIZE(30)) // This divides from the master clock
+            dff clock_counter[32](#INIT(0))
+            dff osc_clk(#INIT(0))
         }
+        
+        edge_detector divided_clk_edge(#RISE(1),#FALL(0), .in(divided_clock.value[13]))
         
         edge_detector osc_clk_edge(#RISE(1), #FALL(0))
         edge_detector game_clk_edge(#RISE(0), #FALL(1))
     }
+
+    sig subtract_value[32]
     
     always {
-        osc_clk_edge.in = divided_clock.value[OSC_DIVS - r0] // clock used to oscillate the blocks. 10MHz / 2^21 gives 4.7Hz, down to 10MHz/2^6=156kHz
-        game_clk_edge.in = divided_clock.value[OSC_DIVS - r0] // clock used to refresh the display
-        // 24 - r0 to obtain the correct oscillation frequency of the blocks based on row height
+        clock_counter.d = clock_counter.q
+        osc_clk.d = osc_clk.q
+
+        subtract_value = r0 << $clog2(128) // This is equivalent to r0 * 128, without having to use multiplication which is expensive
+        
+        if (divided_clk_edge.out) {
+            clock_counter.d = clock_counter.q + 1
+        } else if (clock_counter.q > 2048 - subtract_value) {
+            clock_counter.d = 0
+            osc_clk.d = ~osc_clk.q
+        }
+
+        osc_clk_edge.in = osc_clk.q // clock used to oscillate the blocks. 10MHz / 2^21 gives 4.7Hz, down to 10MHz/2^6=156kHz
+        game_clk_edge.in = osc_clk.q // clock used to refresh the display
         
         clk_game = game_clk_edge.out
         clk_oscillate = osc_clk_edge.out
