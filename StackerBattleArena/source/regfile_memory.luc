@@ -34,8 +34,8 @@ module regfile_memory (
     output r1[32],    // current row's blocks
     output r3[32]     // current block oscillation direction
 ) {
-    // 32x 32-bit registers
-    dff registers[32][32](#INIT(32x{{32h0}}), .clk(clk), .rst(rst))
+    // 12x 32-bit registers
+    dff registers[12][32](#INIT(12x{{32h0}}), .clk(clk), .rst(rst))
     
     always {
         // default connections to silence errors
@@ -70,10 +70,10 @@ module regfile_memory (
             rx[i] = registers.q[i+8]
         }
         
-        // Implementation of asynchronous reset for display buffer
+        // Implementation of asynchronous reset for entire regfile
         if (rxc)
         {
-            repeat (i, 4, 8) // 8,9,10,11 which are display registers
+            repeat (i, 12)
             {
                 registers.d[i] = 0
             }

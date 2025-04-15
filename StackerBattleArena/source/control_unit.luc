@@ -453,7 +453,7 @@ module control_unit (
                 we_x.d = 0
                 wa_x.d = bxxxx
                 wdsel_x.d = 1
-                rxc_x.d = 1
+                rxc_x.d = 0
             
                 // Debug stub and state transitions
                 count.d = 0
@@ -1145,6 +1145,9 @@ module control_unit (
                 rxc_x.d = 1
                 ledmode_x.d = 3  // NOTE: LED mode is set to ROM1 upon menu states!
 
+                // Reset action button pressed flag
+                actionBtnPressed.d = 0
+
                 // Debug stub and state transitions
                 count.d = 0
                 if (toPrintDebug.q) {
@@ -1168,7 +1171,10 @@ module control_unit (
                 wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 1
-                ledmode_x.d = 2 
+                ledmode_x.d = 2
+
+                // Reset action button pressed flag
+                actionBtnPressed.d = 0
 
                 // Debug stub and state transitions
                 count.d = 0
