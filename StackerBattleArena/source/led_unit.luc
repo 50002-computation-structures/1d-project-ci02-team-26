@@ -25,7 +25,7 @@ module led_unit (
          2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
          2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
          2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b10
-    }) // 50 entries here
+    }) // 120 entries here
     
     sig pixel_address[BUFFER_SIZE]  // rx0
     sig pixel1_address[BUFFER_SIZE] // rx1, subtracted
@@ -39,17 +39,23 @@ module led_unit (
     
     dff driver_update_flag(#INIT(1), .clk(clk), .rst(rst))
     
+    index_reverser index_reverser(#COLUMN_DIMENSION(8), #SIZE($clog2(120))) 
+    
     always {
         // LED driver
         driver.clear = 0
         driver.color = 0
+        
+        // Index reverser
+        index_reverser.input_address = driver.pixel_address
         
         // LED driver output!
         data = ~driver.data //TODO: invert this signal because we're using a NOT gate as a voltage level shifter!
         
         // Feedback loop 1: this pixel address comes FROM the driver, which has to be interpreted by the
         // associated circuitry implementing it
-        pixel_address = driver.pixel_address
+        //pixel_address = driver.pixel_address
+        pixel_address = index_reverser.output_address
         driver_update_flag.d = driver_update_flag.q
         
         driver.update = driver_update_flag.q // TODO: have something external enable driver_update?

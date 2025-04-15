@@ -166,6 +166,12 @@
                     "type": "DiskFile",
                     "path": "source/clocks_tb.luc"
                 }
+            },
+            {
+                "file": {
+                    "type": "DiskFile",
+                    "path": "source/index_reverser.luc"
+                }
             }
         ],
         "constraintFiles": [
