@@ -8,7 +8,9 @@ module alchitry_top (
     output io_select[4],    // Digit select on IO Shield
     input io_button[5],     // 5 buttons on IO Shield
     input io_dip[3][8],     // DIP switches on IO Shield
-    output data             // WS2811 data output
+    output data,             // WS2811 data output
+    input actionBtn,
+    input altBtn
 ) {
 
     sig rst                 // reset signal
@@ -23,9 +25,11 @@ module alchitry_top (
         // clock. This ensures the entire FPGA comes out of reset at the same time.
         reset_conditioner reset_cond
         
-        // TODO: change the input of this button conditioner to the actual button!
-        button_conditioner action_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[1]))    // centre button
+        button_conditioner action_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(actionBtn))
         edge_detector action_btn_edge(#RISE(1), #FALL(0), .in(action_btn_conditioner.out))
+
+        button_conditioner alt_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(altBtn))
+        edge_detector alt_btn_edge(#RISE(1), #FALL(0), .in(alt_btn_conditioner.out))
         
         // Buttons for simulating clock inputs
         button_conditioner clkosc_btn_conditioner(#CLK_FREQ(CLK_FREQ), .in(io_button[0]))    // top button
@@ -80,6 +84,7 @@ module alchitry_top (
         control_unit.r0 = regfile.r0
         control_unit.rd1 = regfile.rd1
         control_unit.action_btn = action_btn_edge.out
+        control_unit.alt_btn = alt_btn_edge.out
         control_unit.shift_ok = regfile.shift_ok
         regfile.wa = control_unit.wa
         regfile.we = control_unit.we

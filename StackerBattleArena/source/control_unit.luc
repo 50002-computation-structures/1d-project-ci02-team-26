@@ -6,6 +6,7 @@ module control_unit (
     input r0[32],        // R0 row height register
     input rd1[32],       // RD1 regfile addressable register
     input action_btn,    // Action button that is already debounced and rising edge only
+    input alt_btn,       // Alt button that is already debounced and rising edge only
     input shift_ok[4],   // special 4-bit indicator to indicate at what point are the squares ok to shift on the screen
     output rowshft[6],   // combinational output of how many rows to shift for display buffer
     output rowreg[5],    // combinational output of the correct row register for a specific row in the display buffer. 
