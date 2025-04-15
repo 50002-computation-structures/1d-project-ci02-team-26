@@ -39,7 +39,7 @@ module alchitry_top (
         .rst(rst) {
             regfile_unit regfile()
             clocks clocks(.r0(regfile.r0)) // Clock signal, which depends on register R0 (row height)
-            led_unit led_unit(.rx(regfile.rx))
+            led_unit led_unit(.rx(regfile.rx), .mode(control_unit.ledmode))
             
             // Serial debugger
             uart_tx tx(#BAUD(1_000_000), #CLK_FREQ(100_000_000), 

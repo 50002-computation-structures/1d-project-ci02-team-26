@@ -2,17 +2,30 @@ module led_unit (
     input clk,  // clock
     input rst,  // reset
     input rx[4][32], // display buffer from regfile
+    input mode[3],   // mode of display, 0 means default regfile based, 1 means ROM1, 2 means ROM2
     output data
 ) {
     
     const BUFFER_SIZE = 480; // ensure this value is larger than PIXEL_COUNT * $clog2(COLOR_ENCODING)
     const COLOR_ENCODING = {24h0000FF, 24hFF0000, 24h00FF00, 24h0} // GREEN (01), BLUE (10), RED (11), OFF (00)
-    // const DISPLAY = $reverse({
-    //     2b10, 2b11, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
-    //     2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
-    //     2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
-    //     2b01, 2b10
-    // }) // 50 entries here
+
+    const DISPLAY = $reverse({
+         2b10, 2b11, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b00,
+         2b01, 2b00, 2b01, 2b00, 2b01, 2b00, 2b01, 2b10
+    }) // 50 entries here
     
     sig pixel_address[BUFFER_SIZE]  // rx0
     sig pixel1_address[BUFFER_SIZE] // rx1, subtracted
@@ -32,7 +45,7 @@ module led_unit (
         driver.color = 0
         
         // LED driver output!
-        data = driver.data //TODO: invert this signal because we're using a NOT gate as a voltage level shifter!
+        data = ~driver.data //TODO: invert this signal because we're using a NOT gate as a voltage level shifter!
         
         // Feedback loop 1: this pixel address comes FROM the driver, which has to be interpreted by the
         // associated circuitry implementing it
@@ -56,16 +69,24 @@ module led_unit (
         pixel1_address = pixel_address - 32
         pixel2_address = pixel_address - 64
         pixel3_address = pixel_address - 96
-        if (pixel_address >= 0 && pixel_address < 32) {
-            driver.color = COLOR_ENCODING[rx[0][$resize(pixel_address, $clog2(32))]]
-        } else if (pixel_address >= 32 && pixel_address < 64) {
-            // driver.color is 24 bits COLOUR_ENCODING outputs 24 bits
-            // rx[1][31:0] gives you a full 32 bits representing 4 rows worth of data
-            driver.color = COLOR_ENCODING[rx[1][$resize(pixel1_address, $clog2(32))]]
-        } else if (pixel_address >= 64 && pixel_address < 96) {
-            driver.color = COLOR_ENCODING[rx[2][$resize(pixel2_address, $clog2(32))]]
-        } else if (pixel_address >= 96 && pixel_address < 128) {
-            driver.color = COLOR_ENCODING[rx[3][$resize(pixel3_address, $clog2(32))]]
+        
+        // Regfile based
+        if (mode == 0) {
+            if (pixel_address >= 0 && pixel_address < 32) {
+                driver.color = COLOR_ENCODING[rx[0][$resize(pixel_address, $clog2(32))]]
+            } else if (pixel_address >= 32 && pixel_address < 64) {
+                // driver.color is 24 bits COLOUR_ENCODING outputs 24 bits
+                // rx[1][31:0] gives you a full 32 bits representing 4 rows worth of data
+                driver.color = COLOR_ENCODING[rx[1][$resize(pixel1_address, $clog2(32))]]
+            } else if (pixel_address >= 64 && pixel_address < 96) {
+                driver.color = COLOR_ENCODING[rx[2][$resize(pixel2_address, $clog2(32))]]
+            } else if (pixel_address >= 96 && pixel_address < 128) {
+                driver.color = COLOR_ENCODING[rx[3][$resize(pixel3_address, $clog2(32))]]
+            }
+        } 
+        // ROM based
+        else {
+            driver.color = COLOR_ENCODING[DISPLAY[$resize(pixel_address, $clog2(50))]]
         }
     }
 }

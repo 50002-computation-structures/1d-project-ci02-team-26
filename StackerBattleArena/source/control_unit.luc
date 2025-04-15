@@ -20,6 +20,7 @@ module control_unit (
     output asel[3],
     output bsel[3],
     output wdsel,
+    output ledmode[3],   // commands the LED driver into a different mode
     
     // Serial port
     output new_tx,     // new TX flag
@@ -69,8 +70,8 @@ module control_unit (
         GAME_ACTION6_23,
         GAME_ACTION7_24,
 
-        MENU_GOVER,
-        MENU_PRIZE,
+        MENU_GOVER_25,
+        MENU_PRIZE_26,
         
         DEBUG
     }
@@ -100,6 +101,7 @@ module control_unit (
             dff rxc_x(#INIT(0))
             dff ra1_x[4](#INIT(0))
             dff ra2_x[4](#INIT(0))
+            dff ledmode_x[3](#INIT(1))
             
             // Serial debugger
             dff count[$clog2(BUFFER_LEN)](#INIT(0)) // buffer counter
@@ -111,6 +113,7 @@ module control_unit (
         currState.d = currState.q
         new_tx = 0
         bin2hex.bin = 0
+        ledmode = ledmode_x.q
         
         // Prevent partially driven outputs
         rxc = 0
@@ -124,6 +127,7 @@ module control_unit (
         wdsel_x.d = wdsel_x.q
         rxc_x.d = rxc_x.q
         actionBtnPressed.d = actionBtnPressed.q
+        ledmode_x.d = ledmode_x.q
         
         // LUT for ROWSHFT and ROWREG logic
         // transform R0 row height register into the correct display buffer register
@@ -343,6 +347,7 @@ module control_unit (
                 wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 0
+                ledmode_x.d = 1  // NOTE: LED mode is set to ROM1 upon menu states!
                 
                 // Debug stub and state transitions
                 count.d = 0
@@ -378,6 +383,7 @@ module control_unit (
                 wa_x.d = 0 // R0
                 wdsel_x.d = 0
                 rxc_x.d = 0
+                ledmode_x.d = 0
                 
                 // Debug stub and state transitions
                 count.d = 0
@@ -444,7 +450,7 @@ module control_unit (
                 ra2_x.d = bxxxx
                 bsel_x.d = bxx
                 we_x.d = 0
-                wa_x.d = bxxxx // R1
+                wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 1
             
@@ -1012,16 +1018,16 @@ module control_unit (
                 else {
                     toPrintDebug.d = DEBUG_ENABLED
                     if (rd1 == 1) {
-                        // -> MENU_GOVER
-                        state.d = States.MENU_GOVER
+                        // Game over
+                        state.d = States.MENU_GOVER_25
                     } else {
+                        // TODO: modify this if you want to change the winning condition, such as introducing
+                        // a minor prize screen
                         if (r0 == 15) {
                             // Game is done and user won major prize!
-                            // -> MENU_PRIZE
-                            state.d = States.MENU_PRIZE
+                            state.d = States.MENU_PRIZE_26
                         } else {
-                            // Game not done yet
-                            // -> GAME_ACTION4
+                            // Game not done yet, continue
                             state.d = States.GAME_ACTION4_21
                         }
                     }
@@ -1123,6 +1129,56 @@ module control_unit (
                 else {
                     toPrintDebug.d = DEBUG_ENABLED
                     state.d = States.GAME_IDLE_06
+                }
+
+            States.MENU_GOVER_25:
+                // Simply clear the display upon game over for now
+                //CLEAR_DISP ()
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
+                we_x.d = 0
+                wa_x.d = bxxxx
+                wdsel_x.d = 1
+                rxc_x.d = 1
+                ledmode_x.d = 1  // NOTE: LED mode is set to ROM1 upon menu states!
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.MENU_GOVER_25
+                    state.d = States.DEBUG
+                }
+                else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.MENU_START_00
+                }
+            
+            States.MENU_PRIZE_26:
+                // Simply clear the display upon game over for now
+                //CLEAR_DISP ()
+                alufn_x.d = bxxxxxx
+                asel_x.d = bxxx
+                ra1_x.d = bxxxx
+                ra2_x.d = bxxxx
+                bsel_x.d = bxx
+                we_x.d = 0
+                wa_x.d = bxxxx
+                wdsel_x.d = 1
+                rxc_x.d = 1
+                ledmode_x.d = 1  // NOTE: LED mode is set to ROM1 upon menu states!
+
+                // Debug stub and state transitions
+                count.d = 0
+                if (toPrintDebug.q) {
+                    currState.d = States.MENU_PRIZE_26
+                    state.d = States.DEBUG
+                }
+                else if (action_btn) {
+                    toPrintDebug.d = DEBUG_ENABLED
+                    state.d = States.MENU_START_00
                 }
 
             States.DEBUG:
