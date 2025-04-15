@@ -1143,7 +1143,7 @@ module control_unit (
                 wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 1
-                ledmode_x.d = 1  // NOTE: LED mode is set to ROM1 upon menu states!
+                ledmode_x.d = 3  // NOTE: LED mode is set to ROM1 upon menu states!
 
                 // Debug stub and state transitions
                 count.d = 0
@@ -1168,7 +1168,7 @@ module control_unit (
                 wa_x.d = bxxxx
                 wdsel_x.d = 1
                 rxc_x.d = 1
-                ledmode_x.d = 1  // NOTE: LED mode is set to ROM1 upon menu states!
+                ledmode_x.d = 2 
 
                 // Debug stub and state transitions
                 count.d = 0
